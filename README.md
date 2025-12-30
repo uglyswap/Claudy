@@ -10,6 +10,17 @@ Un assistant de code IA dans votre terminal, propulse par **GLM 4.7** (Z.AI).
 
 ---
 
+## Fonctionnalites
+
+- **GLM 4.7** : Modele d'IA puissant pour le code
+- **Vision IA** : Analyse d'images, videos, OCR, diagrammes
+- **Recherche web** : Recherche sur internet en temps reel
+- **Lecture web** : Extraction du contenu de pages web
+
+Tout est pre-configure. Une seule cle API pour tout.
+
+---
+
 ## Installation
 
 ### Etape 1 : Installer Node.js (si pas deja fait)
@@ -53,26 +64,30 @@ C'est tout !
 
 ---
 
+## Serveurs MCP inclus
+
+Ces serveurs sont automatiquement configures pendant l'installation :
+
+| Serveur | Fonction |
+|---------|----------|
+| **zai-vision** | Analyse d'images, videos, OCR, interpretation de diagrammes |
+| **web-search-prime** | Recherche web en temps reel |
+| **web-reader** | Lecture et extraction de contenu de pages web |
+
+Tous utilisent votre cle API Z.AI. Rien a configurer.
+
+---
+
 ## Configuration
 
 La configuration est stockee dans `~/.claude/settings.json` :
 
-```json
-{
-    "env": {
-        "ANTHROPIC_AUTH_TOKEN": "votre_cle_api_zai",
-        "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
-        "API_TIMEOUT_MS": "3000000"
-    }
-}
-```
+- **Windows** : `C:\Users\VotreNom\.claude\settings.json`
+- **Mac/Linux** : `~/.claude/settings.json`
 
 ### Modifier la cle API
 
-Editez le fichier `~/.claude/settings.json` et remplacez la valeur de `ANTHROPIC_AUTH_TOKEN` par votre cle.
-
-- **Windows** : `C:\Users\VotreNom\.claude\settings.json`
-- **Mac/Linux** : `~/.claude/settings.json`
+Editez le fichier et remplacez toutes les occurrences de votre ancienne cle par la nouvelle.
 
 ---
 

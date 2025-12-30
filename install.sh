@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Claudy Installer for Linux/macOS
-# Pre-configured with GLM 4.7 (Z.AI) - No Anthropic account needed
+# Pre-configured with GLM 4.7 (Z.AI) and MCP servers
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/uglyswap/Claudy/main/install.sh | bash
@@ -15,6 +15,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 WHITE='\033[1;37m'
+GRAY='\033[0;90m'
 NC='\033[0m'
 
 echo ""
@@ -78,7 +79,7 @@ if [ -f "$CLAUDE_PATH" ]; then
 fi
 echo -e "${GREEN}[OK] Commande 'claudy' creee${NC}"
 
-# Create .claude directory and settings.json with GLM configuration
+# Create .claude directory
 CLAUDE_DIR="$HOME/.claude"
 mkdir -p "$CLAUDE_DIR"
 
@@ -101,25 +102,57 @@ read API_KEY
 
 SETTINGS_PATH="$CLAUDE_DIR/settings.json"
 
+KEY_CONFIGURED=true
 if [ -z "$API_KEY" ]; then
     API_KEY="VOTRE_CLE_API_ZAI_ICI"
+    KEY_CONFIGURED=false
     echo ""
     echo -e "${YELLOW}[INFO] Configuration creee sans cle API.${NC}"
     echo -e "${YELLOW}       Editez le fichier suivant pour ajouter votre cle :${NC}"
     echo -e "${CYAN}       $SETTINGS_PATH${NC}"
 fi
 
+# Create settings.json with GLM config and MCP servers
 cat > "$SETTINGS_PATH" << EOF
 {
-    "env": {
-        "ANTHROPIC_AUTH_TOKEN": "$API_KEY",
-        "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
-        "API_TIMEOUT_MS": "3000000"
+  "env": {
+    "ANTHROPIC_AUTH_TOKEN": "$API_KEY",
+    "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
+    "API_TIMEOUT_MS": "3000000"
+  },
+  "mcpServers": {
+    "zai-vision": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@z_ai/mcp-server"],
+      "env": {
+        "Z_AI_API_KEY": "$API_KEY",
+        "Z_AI_MODE": "ZAI"
+      }
+    },
+    "web-search-prime": {
+      "type": "http",
+      "url": "https://api.z.ai/api/mcp/web_search_prime/mcp",
+      "headers": {
+        "Authorization": "Bearer $API_KEY"
+      }
+    },
+    "web-reader": {
+      "type": "http",
+      "url": "https://api.z.ai/api/mcp/web_reader/mcp",
+      "headers": {
+        "Authorization": "Bearer $API_KEY"
+      }
     }
+  }
 }
 EOF
 
 echo -e "${GREEN}[OK] Configuration GLM 4.7 creee${NC}"
+echo -e "${GREEN}[OK] 3 serveurs MCP configures :${NC}"
+echo -e "${GRAY}     - zai-vision (analyse images/videos, OCR)${NC}"
+echo -e "${GRAY}     - web-search-prime (recherche web)${NC}"
+echo -e "${GRAY}     - web-reader (lecture de pages web)${NC}"
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
@@ -130,10 +163,14 @@ echo -e "${WHITE}Pour utiliser Claudy, tapez simplement :${NC}"
 echo ""
 echo -e "${CYAN}    claudy${NC}"
 echo ""
-if [ "$API_KEY" = "VOTRE_CLE_API_ZAI_ICI" ]; then
+if [ "$KEY_CONFIGURED" = false ]; then
     echo -e "${YELLOW}N'oubliez pas d'ajouter votre cle API Z.AI dans :${NC}"
     echo -e "${CYAN}    $SETTINGS_PATH${NC}"
     echo ""
 fi
-echo -e "${GREEN}Pas besoin de compte Anthropic ! Claudy utilise GLM 4.7.${NC}"
+echo -e "${WHITE}Fonctionnalites incluses :${NC}"
+echo -e "${GREEN}  - GLM 4.7 (pas besoin de compte Anthropic)${NC}"
+echo -e "${GREEN}  - Vision IA (images, videos, OCR)${NC}"
+echo -e "${GREEN}  - Recherche web${NC}"
+echo -e "${GREEN}  - Lecture de pages web${NC}"
 echo ""

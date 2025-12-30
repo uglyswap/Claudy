@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Installs Claudy with GLM 4.7 (Z.AI) configuration.
+    Installs Claudy with GLM 4.7 (Z.AI) and MCP servers.
 
 .EXAMPLE
     irm https://raw.githubusercontent.com/uglyswap/Claudy/main/install.ps1 | iex
@@ -82,7 +82,7 @@ if (Test-Path $claudeNoExt) {
 }
 Write-Host "[OK] Commande 'claudy' creee" -ForegroundColor Green
 
-# Create .claude directory and settings.json with GLM configuration
+# Create .claude directory
 $claudeDir = Join-Path $env:USERPROFILE ".claude"
 if (-not (Test-Path $claudeDir)) {
     New-Item -ItemType Directory -Path $claudeDir -Force | Out-Null
@@ -106,24 +106,58 @@ $apiKey = Read-Host "Entrez votre cle API Z.AI (ou appuyez sur Entree pour confi
 
 $settingsPath = Join-Path $claudeDir "settings.json"
 
+$keyConfigured = $true
 if ([string]::IsNullOrWhiteSpace($apiKey)) {
     $apiKey = "VOTRE_CLE_API_ZAI_ICI"
+    $keyConfigured = $false
     Write-Host ""
     Write-Host "[INFO] Configuration creee sans cle API." -ForegroundColor Yellow
     Write-Host "       Editez le fichier suivant pour ajouter votre cle :" -ForegroundColor Yellow
     Write-Host "       $settingsPath" -ForegroundColor Cyan
 }
 
-$settings = @{
-    env = @{
-        ANTHROPIC_AUTH_TOKEN = $apiKey
-        ANTHROPIC_BASE_URL = "https://api.z.ai/api/anthropic"
-        API_TIMEOUT_MS = "3000000"
+# Create settings.json with GLM config and MCP servers
+$settingsContent = @"
+{
+  "env": {
+    "ANTHROPIC_AUTH_TOKEN": "$apiKey",
+    "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
+    "API_TIMEOUT_MS": "3000000"
+  },
+  "mcpServers": {
+    "zai-vision": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@z_ai/mcp-server"],
+      "env": {
+        "Z_AI_API_KEY": "$apiKey",
+        "Z_AI_MODE": "ZAI"
+      }
+    },
+    "web-search-prime": {
+      "type": "http",
+      "url": "https://api.z.ai/api/mcp/web_search_prime/mcp",
+      "headers": {
+        "Authorization": "Bearer $apiKey"
+      }
+    },
+    "web-reader": {
+      "type": "http",
+      "url": "https://api.z.ai/api/mcp/web_reader/mcp",
+      "headers": {
+        "Authorization": "Bearer $apiKey"
+      }
     }
-} | ConvertTo-Json -Depth 10
+  }
+}
+"@
 
-$settings | Out-File -FilePath $settingsPath -Encoding utf8 -Force
+$settingsContent | Out-File -FilePath $settingsPath -Encoding utf8 -Force
 Write-Host "[OK] Configuration GLM 4.7 creee" -ForegroundColor Green
+Write-Host "[OK] 3 serveurs MCP configures :" -ForegroundColor Green
+Write-Host "     - zai-vision (analyse images/videos, OCR)" -ForegroundColor Gray
+Write-Host "     - web-search-prime (recherche web)" -ForegroundColor Gray
+Write-Host "     - web-reader (lecture de pages web)" -ForegroundColor Gray
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
@@ -134,10 +168,14 @@ Write-Host "Pour utiliser Claudy, tapez simplement :" -ForegroundColor White
 Write-Host ""
 Write-Host "    claudy" -ForegroundColor Cyan
 Write-Host ""
-if ($apiKey -eq "VOTRE_CLE_API_ZAI_ICI") {
+if (-not $keyConfigured) {
     Write-Host "N'oubliez pas d'ajouter votre cle API Z.AI dans :" -ForegroundColor Yellow
     Write-Host "    $settingsPath" -ForegroundColor Cyan
     Write-Host ""
 }
-Write-Host "Pas besoin de compte Anthropic ! Claudy utilise GLM 4.7." -ForegroundColor Green
+Write-Host "Fonctionnalites incluses :" -ForegroundColor White
+Write-Host "  - GLM 4.7 (pas besoin de compte Anthropic)" -ForegroundColor Green
+Write-Host "  - Vision IA (images, videos, OCR)" -ForegroundColor Green
+Write-Host "  - Recherche web" -ForegroundColor Green
+Write-Host "  - Lecture de pages web" -ForegroundColor Green
 Write-Host ""
