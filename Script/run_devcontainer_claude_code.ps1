@@ -138,12 +138,12 @@ if (-not $containerId) {
 Write-Host "Found container ID: $containerId"
 
 # --- Step 5 & 6: Execute command and enter interactive shell inside container ---
-Write-Host "Executing 'claude' command and then starting zsh session inside container $($containerId)..."
+Write-Host "Executing 'claudy' command and then starting zsh session inside container $($containerId)..."
 try {
-    & $Backend exec -it $containerId zsh -c 'claude; exec zsh'
+    & $Backend exec -it $containerId zsh -c 'claudy; exec zsh'
     Write-Host "Interactive session ended."
 } catch {
-    $displayCommand = "$Backend exec -it $containerId zsh -c 'claude; exec zsh'"
+    $displayCommand = "$Backend exec -it $containerId zsh -c 'claudy; exec zsh'"
     Write-Error "Failed to execute command inside container (Command: $displayCommand): $($_.Exception.Message)"
     exit 1
 }
