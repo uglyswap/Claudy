@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Installs Claudy on Windows.
+    Installs Claudy with GLM 4.7 (Z.AI) configuration.
 
 .EXAMPLE
     irm https://raw.githubusercontent.com/uglyswap/Claudy/main/install.ps1 | iex
@@ -12,6 +12,7 @@ $ErrorActionPreference = "Stop"
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "         CLAUDY INSTALLER              " -ForegroundColor Cyan
+Write-Host "       Powered by GLM 4.7 (Z.AI)       " -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -44,27 +45,11 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
 }
 Write-Host "[OK] npm" -ForegroundColor Green
 
-# Check if 'claude' command already exists (from another software)
-$existingClaude = Get-Command claude -ErrorAction SilentlyContinue
-if ($existingClaude) {
-    $existingPath = $existingClaude.Source
-    # Check if it's NOT in npm folder (meaning it's another software)
-    $npmPrefix = npm config get prefix
-    if ($existingPath -notlike "$npmPrefix*") {
-        Write-Host ""
-        Write-Host "[INFO] Une commande 'claude' existe deja sur votre systeme :" -ForegroundColor Yellow
-        Write-Host "       $existingPath" -ForegroundColor Yellow
-        Write-Host "       Claudy n'y touchera PAS. Votre logiciel existant reste intact." -ForegroundColor Yellow
-        Write-Host ""
-    }
-}
-
 # Get npm global path
 $npmPrefix = npm config get prefix
 
 Write-Host ""
-Write-Host "Installation en cours..." -ForegroundColor Yellow
-Write-Host ""
+Write-Host "Installation de Claude Code..." -ForegroundColor Yellow
 
 # Install claude-code
 npm install -g @anthropic-ai/claude-code 2>&1 | Out-Null
@@ -73,6 +58,7 @@ if ($LASTEXITCODE -ne 0) {
     Write-Host "[ERREUR] Echec de l'installation." -ForegroundColor Red
     exit 1
 }
+Write-Host "[OK] Claude Code installe" -ForegroundColor Green
 
 # Rename claude to claudy in npm folder only
 $claudeCmd = Join-Path $npmPrefix "claude.cmd"
@@ -82,23 +68,62 @@ $claudyPs1 = Join-Path $npmPrefix "claudy.ps1"
 $claudeNoExt = Join-Path $npmPrefix "claude"
 $claudyNoExt = Join-Path $npmPrefix "claudy"
 
-# Handle .cmd
 if (Test-Path $claudeCmd) {
     if (Test-Path $claudyCmd) { Remove-Item $claudyCmd -Force }
     Move-Item $claudeCmd $claudyCmd -Force
 }
-
-# Handle .ps1
 if (Test-Path $claudePs1) {
     if (Test-Path $claudyPs1) { Remove-Item $claudyPs1 -Force }
     Move-Item $claudePs1 $claudyPs1 -Force
 }
-
-# Handle no extension (for Git Bash)
 if (Test-Path $claudeNoExt) {
     if (Test-Path $claudyNoExt) { Remove-Item $claudyNoExt -Force }
     Move-Item $claudeNoExt $claudyNoExt -Force
 }
+Write-Host "[OK] Commande 'claudy' creee" -ForegroundColor Green
+
+# Create .claude directory and settings.json with GLM configuration
+$claudeDir = Join-Path $env:USERPROFILE ".claude"
+if (-not (Test-Path $claudeDir)) {
+    New-Item -ItemType Directory -Path $claudeDir -Force | Out-Null
+}
+
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "     CONFIGURATION GLM 4.7 (Z.AI)      " -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Pour utiliser Claudy, vous avez besoin d'une cle API Z.AI." -ForegroundColor White
+Write-Host ""
+Write-Host "Si vous n'en avez pas encore :" -ForegroundColor Yellow
+Write-Host "  1. Allez sur https://open.z.ai/" -ForegroundColor Yellow
+Write-Host "  2. Creez un compte ou connectez-vous" -ForegroundColor Yellow
+Write-Host "  3. Allez dans la gestion des cles API" -ForegroundColor Yellow
+Write-Host "  4. Creez une nouvelle cle" -ForegroundColor Yellow
+Write-Host ""
+
+$apiKey = Read-Host "Entrez votre cle API Z.AI (ou appuyez sur Entree pour configurer plus tard)"
+
+$settingsPath = Join-Path $claudeDir "settings.json"
+
+if ([string]::IsNullOrWhiteSpace($apiKey)) {
+    $apiKey = "VOTRE_CLE_API_ZAI_ICI"
+    Write-Host ""
+    Write-Host "[INFO] Configuration creee sans cle API." -ForegroundColor Yellow
+    Write-Host "       Editez le fichier suivant pour ajouter votre cle :" -ForegroundColor Yellow
+    Write-Host "       $settingsPath" -ForegroundColor Cyan
+}
+
+$settings = @{
+    env = @{
+        ANTHROPIC_AUTH_TOKEN = $apiKey
+        ANTHROPIC_BASE_URL = "https://api.z.ai/api/anthropic"
+        API_TIMEOUT_MS = "3000000"
+    }
+} | ConvertTo-Json -Depth 10
+
+$settings | Out-File -FilePath $settingsPath -Encoding utf8 -Force
+Write-Host "[OK] Configuration GLM 4.7 creee" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
@@ -109,5 +134,10 @@ Write-Host "Pour utiliser Claudy, tapez simplement :" -ForegroundColor White
 Write-Host ""
 Write-Host "    claudy" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "C'est tout ! Bonne utilisation." -ForegroundColor White
+if ($apiKey -eq "VOTRE_CLE_API_ZAI_ICI") {
+    Write-Host "N'oubliez pas d'ajouter votre cle API Z.AI dans :" -ForegroundColor Yellow
+    Write-Host "    $settingsPath" -ForegroundColor Cyan
+    Write-Host ""
+}
+Write-Host "Pas besoin de compte Anthropic ! Claudy utilise GLM 4.7." -ForegroundColor Green
 Write-Host ""

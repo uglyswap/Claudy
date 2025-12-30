@@ -1,6 +1,7 @@
 #!/bin/bash
 #
 # Claudy Installer for Linux/macOS
+# Pre-configured with GLM 4.7 (Z.AI) - No Anthropic account needed
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/uglyswap/Claudy/main/install.sh | bash
@@ -19,6 +20,7 @@ NC='\033[0m'
 echo ""
 echo -e "${CYAN}========================================${NC}"
 echo -e "${CYAN}         CLAUDY INSTALLER              ${NC}"
+echo -e "${CYAN}       Powered by GLM 4.7 (Z.AI)       ${NC}"
 echo -e "${CYAN}========================================${NC}"
 echo ""
 
@@ -51,24 +53,11 @@ if ! command -v npm &> /dev/null; then
 fi
 echo -e "${GREEN}[OK] npm${NC}"
 
-# Check if 'claude' command already exists (from another software)
 NPM_PREFIX=$(npm config get prefix)
-if command -v claude &> /dev/null; then
-    EXISTING_CLAUDE=$(which claude)
-    if [[ "$EXISTING_CLAUDE" != "$NPM_PREFIX"* ]]; then
-        echo ""
-        echo -e "${YELLOW}[INFO] Une commande 'claude' existe deja sur votre systeme :${NC}"
-        echo -e "${YELLOW}       $EXISTING_CLAUDE${NC}"
-        echo -e "${YELLOW}       Claudy n'y touchera PAS. Votre logiciel existant reste intact.${NC}"
-        echo ""
-    fi
-fi
-
 NPM_BIN="$NPM_PREFIX/bin"
 
 echo ""
-echo -e "${YELLOW}Installation en cours...${NC}"
-echo ""
+echo -e "${YELLOW}Installation de Claude Code...${NC}"
 
 # Install claude-code
 npm install -g @anthropic-ai/claude-code > /dev/null 2>&1
@@ -77,8 +66,9 @@ if [ $? -ne 0 ]; then
     echo -e "${RED}[ERREUR] Echec de l'installation.${NC}"
     exit 1
 fi
+echo -e "${GREEN}[OK] Claude Code installe${NC}"
 
-# Rename claude to claudy in npm folder only
+# Rename claude to claudy
 CLAUDE_PATH="$NPM_BIN/claude"
 CLAUDY_PATH="$NPM_BIN/claudy"
 
@@ -86,6 +76,50 @@ if [ -f "$CLAUDE_PATH" ]; then
     [ -f "$CLAUDY_PATH" ] && rm -f "$CLAUDY_PATH"
     mv "$CLAUDE_PATH" "$CLAUDY_PATH"
 fi
+echo -e "${GREEN}[OK] Commande 'claudy' creee${NC}"
+
+# Create .claude directory and settings.json with GLM configuration
+CLAUDE_DIR="$HOME/.claude"
+mkdir -p "$CLAUDE_DIR"
+
+echo ""
+echo -e "${CYAN}========================================${NC}"
+echo -e "${CYAN}     CONFIGURATION GLM 4.7 (Z.AI)      ${NC}"
+echo -e "${CYAN}========================================${NC}"
+echo ""
+echo -e "${WHITE}Pour utiliser Claudy, vous avez besoin d'une cle API Z.AI.${NC}"
+echo ""
+echo -e "${YELLOW}Si vous n'en avez pas encore :${NC}"
+echo -e "${YELLOW}  1. Allez sur https://open.z.ai/${NC}"
+echo -e "${YELLOW}  2. Creez un compte ou connectez-vous${NC}"
+echo -e "${YELLOW}  3. Allez dans la gestion des cles API${NC}"
+echo -e "${YELLOW}  4. Creez une nouvelle cle${NC}"
+echo ""
+
+echo -n "Entrez votre cle API Z.AI (ou appuyez sur Entree pour configurer plus tard): "
+read API_KEY
+
+SETTINGS_PATH="$CLAUDE_DIR/settings.json"
+
+if [ -z "$API_KEY" ]; then
+    API_KEY="VOTRE_CLE_API_ZAI_ICI"
+    echo ""
+    echo -e "${YELLOW}[INFO] Configuration creee sans cle API.${NC}"
+    echo -e "${YELLOW}       Editez le fichier suivant pour ajouter votre cle :${NC}"
+    echo -e "${CYAN}       $SETTINGS_PATH${NC}"
+fi
+
+cat > "$SETTINGS_PATH" << EOF
+{
+    "env": {
+        "ANTHROPIC_AUTH_TOKEN": "$API_KEY",
+        "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
+        "API_TIMEOUT_MS": "3000000"
+    }
+}
+EOF
+
+echo -e "${GREEN}[OK] Configuration GLM 4.7 creee${NC}"
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
@@ -96,5 +130,10 @@ echo -e "${WHITE}Pour utiliser Claudy, tapez simplement :${NC}"
 echo ""
 echo -e "${CYAN}    claudy${NC}"
 echo ""
-echo -e "${WHITE}C'est tout ! Bonne utilisation.${NC}"
+if [ "$API_KEY" = "VOTRE_CLE_API_ZAI_ICI" ]; then
+    echo -e "${YELLOW}N'oubliez pas d'ajouter votre cle API Z.AI dans :${NC}"
+    echo -e "${CYAN}    $SETTINGS_PATH${NC}"
+    echo ""
+fi
+echo -e "${GREEN}Pas besoin de compte Anthropic ! Claudy utilise GLM 4.7.${NC}"
 echo ""
