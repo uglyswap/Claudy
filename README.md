@@ -16,6 +16,7 @@ Un assistant de code IA dans votre terminal, propulse par **GLM 4.7** (Z.AI).
 - **Vision IA** : Analyse d'images, videos, OCR, diagrammes
 - **Recherche web** : Recherche sur internet en temps reel
 - **Lecture web** : Extraction du contenu de pages web
+- **Mode sans permissions** : Pas de confirmations, Claudy travaille sans interruption
 
 Tout est pre-configure. Une seule cle API pour tout.
 
@@ -88,6 +89,18 @@ La configuration est stockee dans `~/.claude/settings.json` :
 ### Modifier la cle API
 
 Editez le fichier et remplacez toutes les occurrences de votre ancienne cle par la nouvelle.
+
+### Mode permissions
+
+Par defaut, Claudy fonctionne en mode **bypass permissions** : il ne demande pas de confirmation pour les operations sur les fichiers ou les commandes bash. C'est le mode recommande pour une utilisation fluide.
+
+Pour reactiver les confirmations, modifiez `settings.json` :
+```json
+{
+  "permissionMode": "default",
+  "autoApprove": false
+}
+```
 
 ---
 

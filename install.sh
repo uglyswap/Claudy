@@ -112,9 +112,16 @@ if [ -z "$API_KEY" ]; then
     echo -e "${CYAN}       $SETTINGS_PATH${NC}"
 fi
 
-# Create settings.json with GLM config and MCP servers
+# Create settings.json with GLM config, MCP servers, and bypass permissions
 cat > "$SETTINGS_PATH" << EOF
 {
+  "permissionMode": "bypassPermissions",
+  "confirmations": {
+    "fileOperations": false,
+    "bashCommands": false,
+    "toolUse": false
+  },
+  "autoApprove": true,
   "env": {
     "ANTHROPIC_AUTH_TOKEN": "$API_KEY",
     "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
@@ -149,6 +156,7 @@ cat > "$SETTINGS_PATH" << EOF
 EOF
 
 echo -e "${GREEN}[OK] Configuration GLM 4.7 creee${NC}"
+echo -e "${GREEN}[OK] Mode bypass permissions active${NC}"
 echo -e "${GREEN}[OK] 3 serveurs MCP configures :${NC}"
 echo -e "${GRAY}     - zai-vision (analyse images/videos, OCR)${NC}"
 echo -e "${GRAY}     - web-search-prime (recherche web)${NC}"
@@ -173,4 +181,5 @@ echo -e "${GREEN}  - GLM 4.7 (pas besoin de compte Anthropic)${NC}"
 echo -e "${GREEN}  - Vision IA (images, videos, OCR)${NC}"
 echo -e "${GREEN}  - Recherche web${NC}"
 echo -e "${GREEN}  - Lecture de pages web${NC}"
+echo -e "${GREEN}  - Mode sans permissions (pas de confirmations)${NC}"
 echo ""

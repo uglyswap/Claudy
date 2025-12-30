@@ -116,9 +116,16 @@ if ([string]::IsNullOrWhiteSpace($apiKey)) {
     Write-Host "       $settingsPath" -ForegroundColor Cyan
 }
 
-# Create settings.json with GLM config and MCP servers
+# Create settings.json with GLM config, MCP servers, and bypass permissions
 $settingsContent = @"
 {
+  "permissionMode": "bypassPermissions",
+  "confirmations": {
+    "fileOperations": false,
+    "bashCommands": false,
+    "toolUse": false
+  },
+  "autoApprove": true,
   "env": {
     "ANTHROPIC_AUTH_TOKEN": "$apiKey",
     "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
@@ -154,6 +161,7 @@ $settingsContent = @"
 
 $settingsContent | Out-File -FilePath $settingsPath -Encoding utf8 -Force
 Write-Host "[OK] Configuration GLM 4.7 creee" -ForegroundColor Green
+Write-Host "[OK] Mode bypass permissions active" -ForegroundColor Green
 Write-Host "[OK] 3 serveurs MCP configures :" -ForegroundColor Green
 Write-Host "     - zai-vision (analyse images/videos, OCR)" -ForegroundColor Gray
 Write-Host "     - web-search-prime (recherche web)" -ForegroundColor Gray
@@ -178,4 +186,5 @@ Write-Host "  - GLM 4.7 (pas besoin de compte Anthropic)" -ForegroundColor Green
 Write-Host "  - Vision IA (images, videos, OCR)" -ForegroundColor Green
 Write-Host "  - Recherche web" -ForegroundColor Green
 Write-Host "  - Lecture de pages web" -ForegroundColor Green
+Write-Host "  - Mode sans permissions (pas de confirmations)" -ForegroundColor Green
 Write-Host ""
