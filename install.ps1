@@ -1,11 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Installs Claudy (Claude Code with 'claudy' command) on Windows.
-
-.DESCRIPTION
-    This script installs @anthropic-ai/claude-code globally via npm
-    and renames the 'claude' command to 'claudy'.
+    Installs Claudy on Windows.
 
 .EXAMPLE
     irm https://raw.githubusercontent.com/uglyswap/Claudy/main/install.ps1 | iex
@@ -13,77 +9,105 @@
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "=== Claudy Installer ===" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "         CLAUDY INSTALLER              " -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host ""
 
 # Check if Node.js is installed
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-    Write-Error "Node.js is not installed. Please install Node.js 18+ from https://nodejs.org/"
+    Write-Host "[ERREUR] Node.js n'est pas installe." -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Telechargez Node.js ici : https://nodejs.org/" -ForegroundColor Yellow
+    Write-Host "Choisissez la version LTS (recommandee)." -ForegroundColor Yellow
+    Write-Host ""
     exit 1
 }
 
 $nodeVersion = (node --version) -replace 'v', ''
 $nodeMajor = [int]($nodeVersion.Split('.')[0])
 if ($nodeMajor -lt 18) {
-    Write-Error "Node.js 18+ is required. Current version: $nodeVersion"
+    Write-Host "[ERREUR] Node.js 18 ou superieur est requis." -ForegroundColor Red
+    Write-Host "Version actuelle : $nodeVersion" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Telechargez la derniere version : https://nodejs.org/" -ForegroundColor Yellow
+    Write-Host ""
     exit 1
 }
-Write-Host "[OK] Node.js $nodeVersion detected" -ForegroundColor Green
+Write-Host "[OK] Node.js $nodeVersion" -ForegroundColor Green
 
 # Check if npm is installed
 if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
-    Write-Error "npm is not installed."
+    Write-Host "[ERREUR] npm n'est pas installe." -ForegroundColor Red
     exit 1
 }
-Write-Host "[OK] npm detected" -ForegroundColor Green
+Write-Host "[OK] npm" -ForegroundColor Green
 
-# Get npm global bin path
-$npmBinPath = (npm config get prefix) + "\node_modules\.bin"
-$npmRootBin = (npm config get prefix)
+# Check if 'claude' command already exists (from another software)
+$existingClaude = Get-Command claude -ErrorAction SilentlyContinue
+if ($existingClaude) {
+    $existingPath = $existingClaude.Source
+    # Check if it's NOT in npm folder (meaning it's another software)
+    $npmPrefix = npm config get prefix
+    if ($existingPath -notlike "$npmPrefix*") {
+        Write-Host ""
+        Write-Host "[INFO] Une commande 'claude' existe deja sur votre systeme :" -ForegroundColor Yellow
+        Write-Host "       $existingPath" -ForegroundColor Yellow
+        Write-Host "       Claudy n'y touchera PAS. Votre logiciel existant reste intact." -ForegroundColor Yellow
+        Write-Host ""
+    }
+}
 
-Write-Host "`nInstalling @anthropic-ai/claude-code..." -ForegroundColor Yellow
-npm install -g @anthropic-ai/claude-code
+# Get npm global path
+$npmPrefix = npm config get prefix
+
+Write-Host ""
+Write-Host "Installation en cours..." -ForegroundColor Yellow
+Write-Host ""
+
+# Install claude-code
+npm install -g @anthropic-ai/claude-code 2>&1 | Out-Null
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "Failed to install @anthropic-ai/claude-code"
+    Write-Host "[ERREUR] Echec de l'installation." -ForegroundColor Red
     exit 1
 }
-Write-Host "[OK] claude-code installed" -ForegroundColor Green
 
-# Find and rename claude to claudy
-$claudePath = Join-Path $npmRootBin "claude.cmd"
-$claudyPath = Join-Path $npmRootBin "claudy.cmd"
-$claudePs1Path = Join-Path $npmRootBin "claude.ps1"
-$claudyPs1Path = Join-Path $npmRootBin "claudy.ps1"
-$claudeNoExtPath = Join-Path $npmRootBin "claude"
-$claudyNoExtPath = Join-Path $npmRootBin "claudy"
+# Rename claude to claudy in npm folder only
+$claudeCmd = Join-Path $npmPrefix "claude.cmd"
+$claudyCmd = Join-Path $npmPrefix "claudy.cmd"
+$claudePs1 = Join-Path $npmPrefix "claude.ps1"
+$claudyPs1 = Join-Path $npmPrefix "claudy.ps1"
+$claudeNoExt = Join-Path $npmPrefix "claude"
+$claudyNoExt = Join-Path $npmPrefix "claudy"
 
-Write-Host "`nRenaming 'claude' to 'claudy'..." -ForegroundColor Yellow
-
-# Rename .cmd file
-if (Test-Path $claudePath) {
-    if (Test-Path $claudyPath) { Remove-Item $claudyPath -Force }
-    Copy-Item $claudePath $claudyPath
-    Remove-Item $claudePath -Force
-    Write-Host "[OK] claude.cmd -> claudy.cmd" -ForegroundColor Green
+# Handle .cmd
+if (Test-Path $claudeCmd) {
+    if (Test-Path $claudyCmd) { Remove-Item $claudyCmd -Force }
+    Move-Item $claudeCmd $claudyCmd -Force
 }
 
-# Rename .ps1 file
-if (Test-Path $claudePs1Path) {
-    if (Test-Path $claudyPs1Path) { Remove-Item $claudyPs1Path -Force }
-    Copy-Item $claudePs1Path $claudyPs1Path
-    Remove-Item $claudePs1Path -Force
-    Write-Host "[OK] claude.ps1 -> claudy.ps1" -ForegroundColor Green
+# Handle .ps1
+if (Test-Path $claudePs1) {
+    if (Test-Path $claudyPs1) { Remove-Item $claudyPs1 -Force }
+    Move-Item $claudePs1 $claudyPs1 -Force
 }
 
-# Rename file without extension (for Git Bash, etc.)
-if (Test-Path $claudeNoExtPath) {
-    if (Test-Path $claudyNoExtPath) { Remove-Item $claudyNoExtPath -Force }
-    Copy-Item $claudeNoExtPath $claudyNoExtPath
-    Remove-Item $claudeNoExtPath -Force
-    Write-Host "[OK] claude -> claudy" -ForegroundColor Green
+# Handle no extension (for Git Bash)
+if (Test-Path $claudeNoExt) {
+    if (Test-Path $claudyNoExt) { Remove-Item $claudyNoExt -Force }
+    Move-Item $claudeNoExt $claudyNoExt -Force
 }
 
-Write-Host "`n=== Installation Complete! ===" -ForegroundColor Cyan
-Write-Host "You can now use 'claudy' in any terminal." -ForegroundColor Green
-Write-Host "`nTry it now:" -ForegroundColor Yellow
-Write-Host "  claudy" -ForegroundColor White
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Green
+Write-Host "      INSTALLATION TERMINEE !          " -ForegroundColor Green
+Write-Host "========================================" -ForegroundColor Green
+Write-Host ""
+Write-Host "Pour utiliser Claudy, tapez simplement :" -ForegroundColor White
+Write-Host ""
+Write-Host "    claudy" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "C'est tout ! Bonne utilisation." -ForegroundColor White
+Write-Host ""
