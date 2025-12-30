@@ -78,11 +78,9 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
   -a "export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
   -x
 
-# Install Claude Code
-RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
-
-# Create 'claudy' command alias (symlink to claude)
-RUN ln -s /usr/local/share/npm-global/bin/claude /usr/local/share/npm-global/bin/claudy
+# Install Claude Code and rename to 'claudy' (removes 'claude' command)
+RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION} && \
+  mv /usr/local/share/npm-global/bin/claude /usr/local/share/npm-global/bin/claudy
 
 
 # Copy and set up firewall script
