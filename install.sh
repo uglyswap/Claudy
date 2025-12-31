@@ -177,30 +177,67 @@ fi
 # Also set CLAUDE_CONFIG_DIR just in case future versions support it
 export CLAUDE_CONFIG_DIR="$HOME/.claudy"
 
-# Find and run cli-claudy.js (patched version with Claudy branding)
+# Find cli-claudy.js (patched version with Claudy branding)
 NPM_PREFIX=$(npm config get prefix 2>/dev/null)
-CLAUDY_BIN="$NPM_PREFIX/lib/node_modules/@anthropic-ai/claude-code/cli-claudy.js"
-
-# Try cli-claudy.js first (patched version with Claudy branding)
-if [ -f "$CLAUDY_BIN" ]; then
-    exec node "$CLAUDY_BIN" "${ARGS[@]}"
-fi
-
-# Fallback: try npm root path for cli-claudy.js
 NPM_ROOT=$(npm root -g 2>/dev/null)
-CLAUDY_BIN="$NPM_ROOT/@anthropic-ai/claude-code/cli-claudy.js"
-if [ -f "$CLAUDY_BIN" ]; then
+
+# Possible paths for cli-claudy.js
+CLAUDY_BIN_1="$NPM_PREFIX/lib/node_modules/@anthropic-ai/claude-code/cli-claudy.js"
+CLAUDY_BIN_2="$NPM_ROOT/@anthropic-ai/claude-code/cli-claudy.js"
+CLAUDY_BIN=""
+
+# Try to find cli-claudy.js
+if [ -f "$CLAUDY_BIN_1" ]; then
+    CLAUDY_BIN="$CLAUDY_BIN_1"
+elif [ -f "$CLAUDY_BIN_2" ]; then
+    CLAUDY_BIN="$CLAUDY_BIN_2"
+fi
+
+# ============================================
+# AUTO-REPAIR: If cli-claudy.js doesn't exist, recreate it
+# ============================================
+if [ -z "$CLAUDY_BIN" ]; then
+    echo -e "\033[1;33m[AUTO-REPAIR] cli-claudy.js manquant, re-creation en cours...\033[0m"
+    
+    PATCH_URL="https://raw.githubusercontent.com/uglyswap/Claudy/main/patch-claudy-logo.js"
+    PATCH_PATH="/tmp/patch-claudy-logo.js"
+    
+    # Download and run patch
+    if curl -fsSL "$PATCH_URL" -o "$PATCH_PATH" 2>/dev/null; then
+        if node "$PATCH_PATH" 2>/dev/null; then
+            echo -e "\033[0;32m[AUTO-REPAIR] cli-claudy.js recree avec succes\033[0m"
+            rm -f "$PATCH_PATH"
+            
+            # Try to find it again after patch
+            if [ -f "$CLAUDY_BIN_1" ]; then
+                CLAUDY_BIN="$CLAUDY_BIN_1"
+            elif [ -f "$CLAUDY_BIN_2" ]; then
+                CLAUDY_BIN="$CLAUDY_BIN_2"
+            fi
+        else
+            echo -e "\033[1;33m[WARN] Impossible d'executer le patch\033[0m"
+            rm -f "$PATCH_PATH"
+        fi
+    else
+        echo -e "\033[1;33m[WARN] Impossible de telecharger le patch\033[0m"
+    fi
+fi
+
+# Run cli-claudy.js if found
+if [ -n "$CLAUDY_BIN" ] && [ -f "$CLAUDY_BIN" ]; then
     exec node "$CLAUDY_BIN" "${ARGS[@]}"
 fi
 
-# Final fallback: use original cli.js (if patch wasn't applied)
+# Final fallback: use original cli.js (if patch couldn't be applied)
 CLAUDE_BIN="$NPM_PREFIX/lib/node_modules/@anthropic-ai/claude-code/cli.js"
 if [ -f "$CLAUDE_BIN" ]; then
+    echo -e "\033[1;33m[WARN] Utilisation de cli.js (branding Claude au lieu de Claudy)\033[0m"
     exec node "$CLAUDE_BIN" "${ARGS[@]}"
 fi
 
 CLAUDE_BIN="$NPM_ROOT/@anthropic-ai/claude-code/cli.js"
 if [ -f "$CLAUDE_BIN" ]; then
+    echo -e "\033[1;33m[WARN] Utilisation de cli.js (branding Claude au lieu de Claudy)\033[0m"
     exec node "$CLAUDE_BIN" "${ARGS[@]}"
 fi
 
@@ -374,6 +411,10 @@ echo -e "${MAGENTA}  - Identite Claudy Focan (Dikkenek)${NC}"
 echo ""
 echo -e "${WHITE}Commandes speciales :${NC}"
 echo -e "${CYAN}  - /cle-api <nouvelle_cle>  Changer la cle API Z.AI${NC}"
+echo ""
+echo -e "${WHITE}Resilience aux mises a jour npm :${NC}"
+echo -e "${GRAY}  - Si cli-claudy.js est efface par npm update,${NC}"
+echo -e "${GRAY}    il sera automatiquement recree au prochain lancement${NC}"
 echo ""
 echo -e "${GRAY}Version Claude Code: ${CLAUDE_CODE_VERSION} (frozen)${NC}"
 echo ""
