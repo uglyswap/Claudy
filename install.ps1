@@ -117,12 +117,14 @@ try {
 }
 
 # Create claudy wrapper script that shows logo then launches cli-claudy.js
+# INCLUDES AUTO-REPAIR: If cli-claudy.js is missing, it re-downloads and runs the patch
 $claudyWrapperPath = Join-Path $npmPrefix "claudy.ps1"
 $claudyWrapperContent = @'
 #!/usr/bin/env pwsh
 # Claudy - Wrapper for Claude Code with custom logo
 # Uses ~/.claudy/ for config (separate from Claude Code CLI's ~/.claude/)
 # IMPORTANT: Uses cli-claudy.js (patched) instead of cli.js (original)
+# AUTO-REPAIR: If cli-claudy.js is missing (e.g., after npm update), it recreates it
 
 # Set terminal title to "claudy"
 $Host.UI.RawUI.WindowTitle = "claudy"
@@ -174,29 +176,61 @@ $env:CLAUDE_CONFIG_DIR = $claudyDir
 # Get the directory where this script is located
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-# Find and run cli-claudy.js (patched version with Claudy branding)
-# This is DIFFERENT from cli.js which is used by the 'claude' command
-$claudyExe = Join-Path $scriptDir "node_modules\@anthropic-ai\claude-code\cli-claudy.js"
-if (-not (Test-Path $claudyExe)) {
-    # Try npm global node_modules
-    $npmRoot = npm root -g 2>$null
-    if ($npmRoot) {
-        $claudyExe = Join-Path $npmRoot "@anthropic-ai\claude-code\cli-claudy.js"
+# Find cli-claudy.js (patched version with Claudy branding)
+$npmRoot = npm root -g 2>$null
+$claudyExe = $null
+
+# Try to find cli-claudy.js
+$possiblePaths = @(
+    (Join-Path $scriptDir "node_modules\@anthropic-ai\claude-code\cli-claudy.js"),
+    (Join-Path $npmRoot "@anthropic-ai\claude-code\cli-claudy.js")
+)
+
+foreach ($path in $possiblePaths) {
+    if ($path -and (Test-Path $path)) {
+        $claudyExe = $path
+        break
     }
 }
 
-# Fallback to cli.js if cli-claudy.js doesn't exist
-if (-not (Test-Path $claudyExe)) {
-    $claudyExe = Join-Path $scriptDir "node_modules\@anthropic-ai\claude-code\cli.js"
-    if (-not (Test-Path $claudyExe)) {
-        $npmRoot = npm root -g 2>$null
-        if ($npmRoot) {
-            $claudyExe = Join-Path $npmRoot "@anthropic-ai\claude-code\cli.js"
+# AUTO-REPAIR: If cli-claudy.js doesn't exist, recreate it by running the patch
+if (-not $claudyExe -or -not (Test-Path $claudyExe)) {
+    Write-Host "[AUTO-REPAIR] cli-claudy.js manquant, re-creation en cours..." -ForegroundColor Yellow
+    $patchUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/patch-claudy-logo.js"
+    $patchPath = Join-Path $env:TEMP "patch-claudy-logo.js"
+    try {
+        Invoke-WebRequest -Uri $patchUrl -OutFile $patchPath -UseBasicParsing -ErrorAction Stop
+        $null = & node $patchPath 2>&1
+        Remove-Item $patchPath -Force -ErrorAction SilentlyContinue
+        Write-Host "[AUTO-REPAIR] cli-claudy.js recree avec succes" -ForegroundColor Green
+        
+        # Try to find it again after patch
+        foreach ($path in $possiblePaths) {
+            if ($path -and (Test-Path $path)) {
+                $claudyExe = $path
+                break
+            }
+        }
+    } catch {
+        Write-Host "[WARN] Impossible de recreer cli-claudy.js: $_" -ForegroundColor Yellow
+    }
+}
+
+# Final fallback to cli.js if cli-claudy.js still doesn't exist
+if (-not $claudyExe -or -not (Test-Path $claudyExe)) {
+    $fallbackPaths = @(
+        (Join-Path $scriptDir "node_modules\@anthropic-ai\claude-code\cli.js"),
+        (Join-Path $npmRoot "@anthropic-ai\claude-code\cli.js")
+    )
+    foreach ($path in $fallbackPaths) {
+        if ($path -and (Test-Path $path)) {
+            $claudyExe = $path
+            break
         }
     }
 }
 
-if (Test-Path $claudyExe) {
+if ($claudyExe -and (Test-Path $claudyExe)) {
     & node $claudyExe @filteredArgs
 } else {
     Write-Host "[ERREUR] Claude Code introuvable" -ForegroundColor Red
@@ -205,7 +239,7 @@ if (Test-Path $claudyExe) {
 '@
 
 $claudyWrapperContent | Out-File -FilePath $claudyWrapperPath -Encoding utf8 -Force
-Write-Host "[OK] Wrapper Claudy cree (utilise cli-claudy.js)" -ForegroundColor Green
+Write-Host "[OK] Wrapper Claudy cree (avec auto-reparation)" -ForegroundColor Green
 
 # Create batch file for cmd.exe compatibility
 # This works with both pwsh (PowerShell Core) and powershell (Windows PowerShell)
@@ -381,6 +415,7 @@ Write-Host "Coexistence avec Claude Code CLI :" -ForegroundColor White
 Write-Host "  - 'claudy' utilise cli-claudy.js (patche)" -ForegroundColor Gray
 Write-Host "  - 'claude' utilise cli.js (original, non modifie)" -ForegroundColor Gray
 Write-Host "  - Les deux peuvent fonctionner en parallele" -ForegroundColor Gray
+Write-Host "  - Mise a jour Claude Code? Claudy se repare automatiquement!" -ForegroundColor Gray
 Write-Host ""
 Write-Host "Fonctionnalites incluses :" -ForegroundColor White
 Write-Host "  - Logo CLAUDY avec degrade jaune-magenta" -ForegroundColor Magenta
