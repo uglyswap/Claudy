@@ -5,8 +5,38 @@ Un assistant de code IA dans votre terminal, propulsé par **GLM 4.7** (Z.AI).
 **Pas besoin de compte Anthropic** - Claudy utilise l'API Z.AI.
 
 ![](https://img.shields.io/badge/Node.js-18%2B-brightgreen?style=flat-square)
+![](https://img.shields.io/badge/100%25-Ind%C3%A9pendant-blue?style=flat-square)
 
 <img src="./demo.gif" />
+
+---
+
+## 🎯 100% Indépendant
+
+Claudy est **complètement isolé** de Claude Code CLI. Les deux programmes sont entièrement indépendants :
+
+```
+~/.claudy/                          # Installation Claudy (isolée)
+├── bin/                            # Commande claudy
+├── lib/                            # node_modules isolés
+│   └── node_modules/
+│       └── @anthropic-ai/claude-code/
+├── settings.json                   # Configuration Claudy
+├── skills/                         # Skills Claudy
+└── CLAUDE.md                       # System prompt
+
+~/.claude/                          # Installation Claude Code (séparée)
+└── ...                             # Aucun partage avec Claudy
+```
+
+### Ce qui n'affecte PAS Claudy
+
+| Action | Impact sur Claudy |
+|--------|-------------------|
+| `npm uninstall -g @anthropic-ai/claude-code` | ✅ Aucun impact |
+| `npm update @anthropic-ai/claude-code` | ✅ Aucun impact |
+| Modifier `~/.claude/settings.json` | ✅ Aucun impact |
+| Désinstaller Claude Code | ✅ Aucun impact |
 
 ---
 
@@ -18,6 +48,7 @@ Un assistant de code IA dans votre terminal, propulsé par **GLM 4.7** (Z.AI).
 - **Lecture web** : Extraction du contenu de pages web
 - **Mode sans permissions** : Pas de confirmations, Claudy travaille sans interruption
 - **AKHITHINK** : Mode de réflexion profonde avec animation rainbow 🌈
+- **Installation isolée** : 100% indépendant de Claude Code CLI
 
 Tout est pré-configuré. Une seule clé API pour tout.
 
@@ -126,18 +157,25 @@ C'est tout !
 
 ---
 
-## Coexistence avec Claude Code CLI
+## Architecture d'installation
 
-Claudy est **complètement isolé** de Claude Code CLI officiel :
+### Comparaison Claudy vs Claude Code
 
 | | Claudy | Claude Code CLI |
 |---|--------|----------------|
 | **Commande** | `claudy` | `claude` |
-| **Config** | `~/.claudy/` | `~/.claude/` |
+| **Installation** | `~/.claudy/lib/` (isolée) | npm global |
+| **Config** | `~/.claudy/settings.json` | `~/.claude/settings.json` |
 | **API** | Z.AI (GLM 4.7) | Anthropic |
-| **CLI file** | `cli-claudy.js` | `cli.js` |
+| **Dépendances** | Isolées dans ~/.claudy/ | npm global |
 
-Vous pouvez installer et utiliser les deux en parallèle sans aucun conflit.
+### Indépendance totale
+
+Les deux programmes ne partagent **aucun fichier** :
+
+- **Claudy** a sa propre copie de `@anthropic-ai/claude-code` dans `~/.claudy/lib/`
+- **Claude Code** utilise l'installation npm globale (si installé)
+- Vous pouvez installer, désinstaller, ou modifier l'un sans affecter l'autre
 
 ---
 
@@ -193,48 +231,79 @@ Claude Code utilise ces noms de variables en interne. En changeant `ANTHROPIC_BA
 
 ### J'ai déjà Claude Code CLI installé, ça pose problème ?
 
-**Non.** Claudy utilise un dossier de configuration séparé (`~/.claudy/`) et une commande différente (`claudy`). Les deux peuvent coexister sans conflit :
-- `claude` → Claude Code CLI officiel (utilise `~/.claude/` et `cli.js`)
-- `claudy` → Claudy avec GLM 4.7 (utilise `~/.claudy/` et `cli-claudy.js`)
+**Non.** Claudy est 100% indépendant avec sa propre installation dans `~/.claudy/`. Les deux peuvent coexister sans conflit :
+- `claude` → Claude Code CLI officiel (npm global + `~/.claude/`)
+- `claudy` → Claudy avec GLM 4.7 (`~/.claudy/` uniquement)
 
-### La commande claudy ne fonctionne pas dans CMD ?
+### La commande claudy ne fonctionne pas ?
 
-Après l'installation, **fermez et rouvrez votre terminal** pour que la commande soit reconnue. Si le problème persiste, vérifiez que le dossier npm est dans votre PATH :
-```cmd
-npm config get prefix
+Après l'installation, **fermez et rouvrez votre terminal** pour que le PATH soit mis à jour. 
+
+Sur Windows, vérifiez que `~/.claudy/bin/` est dans votre PATH :
+```powershell
+$env:PATH -split ';' | Select-String "claudy"
 ```
-Le dossier retourné doit être dans votre variable d'environnement PATH.
+
+Sur Mac/Linux :
+```bash
+echo $PATH | tr ':' '\n' | grep claudy
+```
 
 ### Comment désinstaller Claudy ?
 
-**Étape 1** - Supprimer la commande claudy :
-```bash
-# Trouver où est installé claudy
-npm root -g
-# Supprimer les fichiers claudy dans le dossier bin npm
-```
+C'est simple - supprimez juste le dossier `~/.claudy/` :
 
-**Étape 2** - Supprimer le dossier de configuration :
+**Mac/Linux :**
 ```bash
-# Mac/Linux
 rm -rf ~/.claudy
-
-# Windows (PowerShell)
-Remove-Item -Recurse -Force $env:USERPROFILE\.claudy
+# Optionnel: retirer la ligne PATH de votre .bashrc/.zshrc
 ```
 
-**Note** : Cela ne désinstalle PAS Claude Code CLI ni n'affecte sa configuration dans `~/.claude/`.
+**Windows (PowerShell) :**
+```powershell
+Remove-Item -Recurse -Force $env:USERPROFILE\.claudy
+# Optionnel: retirer ~/.claudy/bin du PATH utilisateur
+```
 
-### Comment désinstaller complètement (Claudy + Claude Code) ?
+**Note** : Cela n'affecte PAS Claude Code CLI car Claudy est entièrement isolé.
+
+### Comment tout désinstaller (Claudy + Claude Code) ?
 
 Si vous voulez tout supprimer :
 ```bash
-# Désinstaller le package npm
-npm uninstall -g @anthropic-ai/claude-code
+# Supprimer Claudy (installation isolée)
+rm -rf ~/.claudy
 
-# Supprimer les configurations
-rm -rf ~/.claudy    # Config Claudy
-rm -rf ~/.claude    # Config Claude Code CLI (si vous l'utilisez aussi)
+# Supprimer Claude Code CLI (installation npm globale)
+npm uninstall -g @anthropic-ai/claude-code
+rm -rf ~/.claude
+```
+
+---
+
+## Structure des fichiers
+
+```
+~/.claudy/
+├── bin/
+│   ├── claudy           # Wrapper (Linux/Mac)
+│   ├── claudy.ps1       # Wrapper (Windows PowerShell)
+│   ├── claudy.cmd       # Wrapper (Windows CMD)
+│   └── claudy-logo.sh   # Script logo animé
+├── lib/
+│   ├── package.json
+│   └── node_modules/
+│       └── @anthropic-ai/
+│           └── claude-code/
+│               ├── cli.js        # Original (non utilisé)
+│               └── cli-claudy.js # Patché avec branding Claudy
+├── modules/
+│   └── Claudy-Logo.psm1 # Module PowerShell pour le logo
+├── skills/
+│   └── cle-api/
+│       └── SKILL.md     # Skill pour changer la clé API
+├── settings.json        # Configuration (API, MCP servers)
+└── CLAUDE.md            # System prompt personnalisé
 ```
 
 ---
