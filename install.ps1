@@ -304,27 +304,35 @@ try {
 Write-Host ""
 Write-Host "Installation des skills Claudy..." -ForegroundColor Yellow
 
-# Create skills directory in ~/.claude/skills/ (Claude Code's skill directory)
-$skillsDir = Join-Path $env:USERPROFILE ".claude\skills"
-if (-not (Test-Path $skillsDir)) {
-    New-Item -ItemType Directory -Path $skillsDir -Force | Out-Null
+# Create skills directory in ~/.claudy/skills/ (Claudy's config directory)
+# Also install in ~/.claude/skills/ for compatibility
+$skillsDirs = @(
+    (Join-Path $claudyDir "skills"),
+    (Join-Path $env:USERPROFILE ".claude\skills")
+)
+
+foreach ($skillsDir in $skillsDirs) {
+    if (-not (Test-Path $skillsDir)) {
+        New-Item -ItemType Directory -Path $skillsDir -Force | Out-Null
+    }
+    
+    # Install /cle-api skill for changing Z.AI API key
+    $cleApiSkillDir = Join-Path $skillsDir "cle-api"
+    if (-not (Test-Path $cleApiSkillDir)) {
+        New-Item -ItemType Directory -Path $cleApiSkillDir -Force | Out-Null
+    }
+    
+    $cleApiSkillUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/skills/cle-api/SKILL.md"
+    $cleApiSkillPath = Join-Path $cleApiSkillDir "SKILL.md"
+    
+    try {
+        Invoke-WebRequest -Uri $cleApiSkillUrl -OutFile $cleApiSkillPath -UseBasicParsing
+    } catch {
+        # Silent fail for secondary location
+    }
 }
 
-# Install /cle-api skill for changing Z.AI API key
-$cleApiSkillDir = Join-Path $skillsDir "cle-api"
-if (-not (Test-Path $cleApiSkillDir)) {
-    New-Item -ItemType Directory -Path $cleApiSkillDir -Force | Out-Null
-}
-
-$cleApiSkillUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/skills/cle-api/SKILL.md"
-$cleApiSkillPath = Join-Path $cleApiSkillDir "SKILL.md"
-
-try {
-    Invoke-WebRequest -Uri $cleApiSkillUrl -OutFile $cleApiSkillPath -UseBasicParsing
-    Write-Host "[OK] Skill /cle-api installe (changer la cle API)" -ForegroundColor Magenta
-} catch {
-    Write-Host "[WARN] Impossible de telecharger le skill cle-api" -ForegroundColor Yellow
-}
+Write-Host "[OK] Skill /cle-api installe (changer la cle API)" -ForegroundColor Magenta
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
