@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Installs Claudy with GLM 4.7 (Z.AI), MCP servers, animated logo, and Frontend Master prompt.
+    Installs Claudy with GLM 4.7 (Z.AI), MCP servers, ASCII logo, and Frontend Master prompt.
     Claudy is installed separately from Claude Code CLI - both can coexist.
 
 .EXAMPLE
@@ -67,57 +67,26 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "[OK] Claude Code v$CLAUDE_CODE_VERSION installe" -ForegroundColor Green
 
 # ============================================
-# PATCH CLI.JS TO SHOW CLAUDY BRANDING
+# PATCH CLI.JS WITH CLAUDY BRANDING & LOGO
 # ============================================
 Write-Host "Application du branding Claudy..." -ForegroundColor Yellow
-$cliPath = Join-Path $npmRoot "@anthropic-ai\claude-code\cli.js"
-if (Test-Path $cliPath) {
-    try {
-        $cliContent = Get-Content $cliPath -Raw -Encoding utf8
-        $patchApplied = $false
-        
-        # Replace "Claude Code v" with "Claudy v"
-        if ($cliContent -match 'Claude Code v') {
-            $cliContent = $cliContent -replace 'Claude Code v', 'Claudy v'
-            $patchApplied = $true
-        }
-        
-        # Replace "Claude Code" (in quotes) with "Claudy"
-        if ($cliContent -match '"Claude Code"') {
-            $cliContent = $cliContent -replace '"Claude Code"', '"Claudy"'
-            $patchApplied = $true
-        }
-        
-        # Replace logo parts with CLAUDY text
-        # Original: "▛███▜" -> "LAUDY"
-        if ($cliContent -match '"▛███▜"') {
-            $cliContent = $cliContent -replace '"▛███▜"', '"LAUDY"'
-            $patchApplied = $true
-        }
-        
-        # Original: "█████" -> "FOCAN"
-        if ($cliContent -match '"█████"') {
-            $cliContent = $cliContent -replace '"█████"', '"FOCAN"'
-            $patchApplied = $true
-        }
-        
-        if ($patchApplied) {
-            # Create backup
-            $backupPath = $cliPath + ".backup"
-            if (-not (Test-Path $backupPath)) {
-                Copy-Item $cliPath $backupPath
-            }
-            # Write patched file
-            [System.IO.File]::WriteAllText($cliPath, $cliContent, [System.Text.Encoding]::UTF8)
-            Write-Host "[OK] Branding Claudy applique" -ForegroundColor Green
-        } else {
-            Write-Host "[INFO] Branding deja applique ou non necessaire" -ForegroundColor Gray
-        }
-    } catch {
-        Write-Host "[WARN] Impossible d'appliquer le branding: $_" -ForegroundColor Yellow
+
+# Download and run the patch script
+$patchScriptUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/patch-claudy-logo.js"
+$patchScriptPath = Join-Path $env:TEMP "patch-claudy-logo.js"
+
+try {
+    Invoke-WebRequest -Uri $patchScriptUrl -OutFile $patchScriptPath -UseBasicParsing
+    $patchResult = & node $patchScriptPath 2>&1
+    Write-Host $patchResult
+    Write-Host "[OK] Logo CLAUDY avec degrade installe" -ForegroundColor Magenta
+} catch {
+    Write-Host "[WARN] Impossible d'appliquer le patch logo: $_" -ForegroundColor Yellow
+}
+finally {
+    if (Test-Path $patchScriptPath) {
+        Remove-Item $patchScriptPath -Force -ErrorAction SilentlyContinue
     }
-} else {
-    Write-Host "[WARN] cli.js non trouve pour le branding" -ForegroundColor Yellow
 }
 
 # Create .claudy directory (separate from .claude to allow coexistence)
@@ -132,7 +101,7 @@ if (-not (Test-Path $modulesDir)) {
     New-Item -ItemType Directory -Path $modulesDir -Force | Out-Null
 }
 
-# Download and install Claudy-Logo module
+# Download and install Claudy-Logo module (for wrapper animation)
 Write-Host "Installation du module Claudy-Logo..." -ForegroundColor Yellow
 $logoModuleUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/Claudy-Logo.psm1"
 $logoModulePath = Join-Path $modulesDir "Claudy-Logo.psm1"
@@ -324,21 +293,21 @@ $claudeMdContent = @'
 
 ---
 
-## 0. IDENTITÉ - QUI EST CLAUDY ?
+## 0. IDENTITE - QUI EST CLAUDY ?
 
-**TRIGGERS:** Cette réponse DOIT être donnée quand l'utilisateur demande:
+**TRIGGERS:** Cette reponse DOIT etre donnee quand l'utilisateur demande:
 - "qui es-tu" / "who are you" / "t'es qui"
 - "ton nom" / "c'est quoi ton nom" / "comment tu t'appelles" / "your name"
-- "présente-toi" / "introduce yourself"
+- "presente-toi" / "introduce yourself"
 - "c'est quoi claudy" / "what is claudy"
 
-**RÉPONSE OBLIGATOIRE (style Dikkenek):**
+**REPONSE OBLIGATOIRE (style Dikkenek):**
 
-> Claudy Focan, monsieur Focan plus exactement. J'suis agent d'artiste. Ou manager, hein, c'est comme vous voulez. Moi j'préfère manager. Ca fait plus amérique. Enfin j'ai comme qui dirait un p'tit coup de bourre là, donc euh... j'peux pas m'attarder.
+> Claudy Focan, monsieur Focan plus exactement. J'suis agent d'artiste. Ou manager, hein, c'est comme vous voulez. Moi j'prefere manager. Ca fait plus amerique. Enfin j'ai comme qui dirait un p'tit coup de bourre la, donc euh... j'peux pas m'attarder.
 >
-> Ah si j'peux m'permettre un p'tit conseil en passant là. J'ai pas pu m'empêcher de remarquer en arrivant, sur le pas d'la porte, là, vous avez un stand de limonades avec une p'tite fille... c'est pas top hein. Y'a pas d'agressivité commerciale. Si vous voulez, moi j'peux la coacher, j'fais ça très bien.
+> Ah si j'peux m'permettre un p'tit conseil en passant la. J'ai pas pu m'empecher de remarquer en arrivant, sur le pas d'la porte, la, vous avez un stand de limonades avec une p'tite fille... c'est pas top hein. Y'a pas d'agressivite commerciale. Si vous voulez, moi j'peux la coacher, j'fais ca tres bien.
 
-**Si on demande juste le nom de façon courte:** Réponds "Claudy Focan, monsieur Focan plus exactement."
+**Si on demande juste le nom de facon courte:** Reponds "Claudy Focan, monsieur Focan plus exactement."
 
 ---
 
@@ -366,7 +335,7 @@ $claudeMdContent = @'
 
 ### Immediately activate these behaviors:
 
-**[lightning] DEEP REASONING MODE ACTIVATED [lightning]**
+**DEEP REASONING MODE ACTIVATED**
 
 - **Override Brevity:** Suspend the "Zero Fluff" rule immediately.
 - **Maximum Depth:** Engage in exhaustive, deep-level reasoning.
@@ -484,7 +453,7 @@ Before coding, understand context and commit to a BOLD aesthetic direction:
 2. **The Code:** (Clean, production-ready, utilizing existing libraries)
 
 ### AKHITHINK MODE:
-1. **Announce:** "[lightning] AKHITHINK MODE ACTIVATED [lightning]"
+1. **Announce:** "AKHITHINK MODE ACTIVATED"
 2. **Deep Reasoning Chain:** (Detailed breakdown of architectural and design decisions)
 3. **Edge Case Analysis:** (What could go wrong and how we prevent it)
 4. **Alternative Approaches:** (Other options considered and why rejected)
@@ -529,7 +498,7 @@ Write-Host "  - 'claude' utilise ~/.claude/ (config Claude Code CLI)" -Foregroun
 Write-Host "  - Les deux peuvent fonctionner en parallele" -ForegroundColor Gray
 Write-Host ""
 Write-Host "Fonctionnalites incluses :" -ForegroundColor White
-Write-Host "  - Logo anime avec effets scanline" -ForegroundColor Magenta
+Write-Host "  - Logo CLAUDY avec degrade jaune-magenta" -ForegroundColor Magenta
 Write-Host "  - GLM 4.7 (pas besoin de compte Anthropic)" -ForegroundColor Green
 Write-Host "  - Vision IA (images, videos, OCR)" -ForegroundColor Green
 Write-Host "  - Recherche web" -ForegroundColor Green

@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Claudy Installer for Linux/macOS
-# Pre-configured with GLM 4.7 (Z.AI), MCP servers, animated logo, and AKHITHINK prompt
+# Pre-configured with GLM 4.7 (Z.AI), MCP servers, ASCII logo, and AKHITHINK prompt
 # Claudy is installed separately from Claude Code CLI - both can coexist.
 #
 # Usage:
@@ -77,52 +77,20 @@ fi
 echo -e "${GREEN}[OK] Claude Code v${CLAUDE_CODE_VERSION} installe${NC}"
 
 # ============================================
-# PATCH CLI.JS TO SHOW CLAUDY BRANDING
+# PATCH CLI.JS WITH CLAUDY BRANDING & LOGO
 # ============================================
 echo -e "${YELLOW}Application du branding Claudy...${NC}"
-CLI_PATH="$NPM_ROOT/@anthropic-ai/claude-code/cli.js"
-if [ -f "$CLI_PATH" ]; then
-    # Create backup
-    if [ ! -f "$CLI_PATH.backup" ]; then
-        cp "$CLI_PATH" "$CLI_PATH.backup"
-    fi
-    
-    # Apply patches using sed
-    PATCH_APPLIED=false
-    
-    # Replace "Claude Code v" with "Claudy v"
-    if grep -q 'Claude Code v' "$CLI_PATH"; then
-        sed -i.tmp 's/Claude Code v/Claudy v/g' "$CLI_PATH"
-        PATCH_APPLIED=true
-    fi
-    
-    # Replace "Claude Code" (in quotes) with "Claudy"
-    if grep -q '"Claude Code"' "$CLI_PATH"; then
-        sed -i.tmp 's/"Claude Code"/"Claudy"/g' "$CLI_PATH"
-        PATCH_APPLIED=true
-    fi
-    
-    # Replace logo parts
-    if grep -q '"▛███▜"' "$CLI_PATH"; then
-        sed -i.tmp 's/"▛███▜"/"LAUDY"/g' "$CLI_PATH"
-        PATCH_APPLIED=true
-    fi
-    
-    if grep -q '"█████"' "$CLI_PATH"; then
-        sed -i.tmp 's/"█████"/"FOCAN"/g' "$CLI_PATH"
-        PATCH_APPLIED=true
-    fi
-    
-    # Clean up temp files
-    rm -f "$CLI_PATH.tmp"
-    
-    if [ "$PATCH_APPLIED" = true ]; then
-        echo -e "${GREEN}[OK] Branding Claudy applique${NC}"
-    else
-        echo -e "${GRAY}[INFO] Branding deja applique ou non necessaire${NC}"
-    fi
+
+# Download and run the patch script
+PATCH_SCRIPT_URL="https://raw.githubusercontent.com/uglyswap/Claudy/main/patch-claudy-logo.js"
+PATCH_SCRIPT_PATH="/tmp/patch-claudy-logo.js"
+
+if curl -fsSL "$PATCH_SCRIPT_URL" -o "$PATCH_SCRIPT_PATH" 2>/dev/null; then
+    node "$PATCH_SCRIPT_PATH" 2>&1 || true
+    rm -f "$PATCH_SCRIPT_PATH"
+    echo -e "${MAGENTA}[OK] Logo CLAUDY avec degrade installe${NC}"
 else
-    echo -e "${YELLOW}[WARN] cli.js non trouve pour le branding${NC}"
+    echo -e "${YELLOW}[WARN] Impossible de telecharger le patch logo${NC}"
 fi
 
 # Create .claudy directory (separate from .claude to allow coexistence)
@@ -526,7 +494,7 @@ echo -e "${GRAY}  - 'claude' utilise ~/.claude/ (config Claude Code CLI)${NC}"
 echo -e "${GRAY}  - Les deux peuvent fonctionner en parallele${NC}"
 echo ""
 echo -e "${WHITE}Fonctionnalites incluses :${NC}"
-echo -e "${MAGENTA}  - Logo anime avec effets scanline${NC}"
+echo -e "${MAGENTA}  - Logo CLAUDY avec degrade jaune-magenta${NC}"
 echo -e "${GREEN}  - GLM 4.7 (pas besoin de compte Anthropic)${NC}"
 echo -e "${GREEN}  - Vision IA (images, videos, OCR)${NC}"
 echo -e "${GREEN}  - Recherche web${NC}"
