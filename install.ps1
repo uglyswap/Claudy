@@ -298,6 +298,34 @@ try {
     Write-Host "[WARN] Impossible de telecharger CLAUDE.md" -ForegroundColor Yellow
 }
 
+# ============================================
+# INSTALL CLAUDY SKILLS
+# ============================================
+Write-Host ""
+Write-Host "Installation des skills Claudy..." -ForegroundColor Yellow
+
+# Create skills directory in ~/.claude/skills/ (Claude Code's skill directory)
+$skillsDir = Join-Path $env:USERPROFILE ".claude\skills"
+if (-not (Test-Path $skillsDir)) {
+    New-Item -ItemType Directory -Path $skillsDir -Force | Out-Null
+}
+
+# Install /cle-api skill for changing Z.AI API key
+$cleApiSkillDir = Join-Path $skillsDir "cle-api"
+if (-not (Test-Path $cleApiSkillDir)) {
+    New-Item -ItemType Directory -Path $cleApiSkillDir -Force | Out-Null
+}
+
+$cleApiSkillUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/skills/cle-api/SKILL.md"
+$cleApiSkillPath = Join-Path $cleApiSkillDir "SKILL.md"
+
+try {
+    Invoke-WebRequest -Uri $cleApiSkillUrl -OutFile $cleApiSkillPath -UseBasicParsing
+    Write-Host "[OK] Skill /cle-api installe (changer la cle API)" -ForegroundColor Magenta
+} catch {
+    Write-Host "[WARN] Impossible de telecharger le skill cle-api" -ForegroundColor Yellow
+}
+
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
 Write-Host "      INSTALLATION TERMINEE !          " -ForegroundColor Green
@@ -331,6 +359,9 @@ Write-Host "  - Mode sans permissions (pas de confirmations)" -ForegroundColor G
 Write-Host "  - Version figee (pas de mises a jour auto)" -ForegroundColor Green
 Write-Host "  - AKHITHINK: Deep reasoning mode" -ForegroundColor Magenta
 Write-Host "  - Identite Claudy Focan (Dikkenek)" -ForegroundColor Magenta
+Write-Host ""
+Write-Host "Commandes speciales :" -ForegroundColor White
+Write-Host "  - /cle-api <nouvelle_cle>  Changer la cle API Z.AI" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Version Claude Code: $CLAUDE_CODE_VERSION (frozen)" -ForegroundColor Gray
 Write-Host ""
