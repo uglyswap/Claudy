@@ -2,6 +2,7 @@
 <#
 .SYNOPSIS
     Installs Claudy with GLM 4.7 (Z.AI), MCP servers, animated logo, and Frontend Master prompt.
+    Claudy is installed separately from Claude Code CLI - both can coexist.
 
 .EXAMPLE
     irm https://raw.githubusercontent.com/uglyswap/Claudy/main/install.ps1 | iex
@@ -64,14 +65,14 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "[OK] Claude Code v$CLAUDE_CODE_VERSION installe" -ForegroundColor Green
 
-# Create .claude directory
-$claudeDir = Join-Path $env:USERPROFILE ".claude"
-if (-not (Test-Path $claudeDir)) {
-    New-Item -ItemType Directory -Path $claudeDir -Force | Out-Null
+# Create .claudy directory (separate from .claude to allow coexistence)
+$claudyDir = Join-Path $env:USERPROFILE ".claudy"
+if (-not (Test-Path $claudyDir)) {
+    New-Item -ItemType Directory -Path $claudyDir -Force | Out-Null
 }
 
 # Create modules directory
-$modulesDir = Join-Path $claudeDir "modules"
+$modulesDir = Join-Path $claudyDir "modules"
 if (-not (Test-Path $modulesDir)) {
     New-Item -ItemType Directory -Path $modulesDir -Force | Out-Null
 }
@@ -92,9 +93,10 @@ $claudyWrapperPath = Join-Path $npmPrefix "claudy.ps1"
 $claudyWrapperContent = @'
 #!/usr/bin/env pwsh
 # Claudy - Wrapper for Claude Code with custom logo
+# Uses ~/.claudy/ for config (separate from Claude Code CLI's ~/.claude/)
 
-$claudeDir = Join-Path $env:USERPROFILE ".claude"
-$modulePath = Join-Path $claudeDir "modules\Claudy-Logo.psm1"
+$claudyDir = Join-Path $env:USERPROFILE ".claudy"
+$modulePath = Join-Path $claudyDir "modules\Claudy-Logo.psm1"
 
 # Check for --no-logo or -n flag
 $showLogo = $true
@@ -116,6 +118,9 @@ if ($showLogo -and (Test-Path $modulePath)) {
         # Silently continue if logo fails
     }
 }
+
+# Set environment to use Claudy config
+$env:CLAUDE_CONFIG_DIR = Join-Path $env:USERPROFILE ".claudy"
 
 # Get the directory where this script is located
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -145,18 +150,15 @@ Write-Host "[OK] Wrapper Claudy cree" -ForegroundColor Green
 $claudyCmdPath = Join-Path $npmPrefix "claudy.cmd"
 $claudyCmdContent = @"
 @echo off
+set CLAUDE_CONFIG_DIR=%USERPROFILE%\.claudy
 pwsh -NoProfile -ExecutionPolicy Bypass -File "%~dp0claudy.ps1" %*
 "@
 $claudyCmdContent | Out-File -FilePath $claudyCmdPath -Encoding ascii -Force
 Write-Host "[OK] Commande 'claudy' creee" -ForegroundColor Green
 
-# Remove original claude commands to avoid confusion
-$claudeCmd = Join-Path $npmPrefix "claude.cmd"
-$claudePs1 = Join-Path $npmPrefix "claude.ps1"
-$claudeNoExt = Join-Path $npmPrefix "claude"
-if (Test-Path $claudeCmd) { Remove-Item $claudeCmd -Force -ErrorAction SilentlyContinue }
-if (Test-Path $claudePs1) { Remove-Item $claudePs1 -Force -ErrorAction SilentlyContinue }
-if (Test-Path $claudeNoExt) { Remove-Item $claudeNoExt -Force -ErrorAction SilentlyContinue }
+# NOTE: We do NOT remove the 'claude' command anymore
+# This allows Claude Code CLI and Claudy to coexist
+Write-Host "[OK] Commande 'claude' preservee (coexistence avec Claude Code CLI)" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
@@ -174,7 +176,7 @@ Write-Host ""
 
 $apiKey = Read-Host "Entrez votre cle API Z.AI (ou appuyez sur Entree pour configurer plus tard)"
 
-$settingsPath = Join-Path $claudeDir "settings.json"
+$settingsPath = Join-Path $claudyDir "settings.json"
 
 $keyConfigured = $true
 if ([string]::IsNullOrWhiteSpace($apiKey)) {
@@ -240,7 +242,7 @@ Write-Host "[OK] Auto-updater desactive" -ForegroundColor Green
 Write-Host "[OK] 3 serveurs MCP configures" -ForegroundColor Green
 
 # Create CLAUDE.md with Frontend Master prompt and Claudy Focan identity
-$claudeMdPath = Join-Path $claudeDir "CLAUDE.md"
+$claudeMdPath = Join-Path $claudyDir "CLAUDE.md"
 $claudeMdContent = @'
 # CLAUDY - SYSTEM PROMPT GLOBAL
 
@@ -445,6 +447,11 @@ if (-not $keyConfigured) {
     Write-Host "    $settingsPath" -ForegroundColor Cyan
     Write-Host ""
 }
+Write-Host "Coexistence avec Claude Code CLI :" -ForegroundColor White
+Write-Host "  - 'claudy' utilise ~/.claudy/ (config Claudy)" -ForegroundColor Gray
+Write-Host "  - 'claude' utilise ~/.claude/ (config Claude Code CLI)" -ForegroundColor Gray
+Write-Host "  - Les deux peuvent fonctionner en parallele" -ForegroundColor Gray
+Write-Host ""
 Write-Host "Fonctionnalites incluses :" -ForegroundColor White
 Write-Host "  - Logo anime avec effets scanline" -ForegroundColor Magenta
 Write-Host "  - GLM 4.7 (pas besoin de compte Anthropic)" -ForegroundColor Green

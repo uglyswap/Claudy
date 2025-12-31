@@ -2,6 +2,7 @@
 #
 # Claudy Installer for Linux/macOS
 # Pre-configured with GLM 4.7 (Z.AI), MCP servers, animated logo, and AKHITHINK prompt
+# Claudy is installed separately from Claude Code CLI - both can coexist.
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/uglyswap/Claudy/main/install.sh | bash
@@ -74,30 +75,28 @@ if [ $? -ne 0 ]; then
 fi
 echo -e "${GREEN}[OK] Claude Code v${CLAUDE_CODE_VERSION} installe${NC}"
 
-# Create .claude directory
-CLAUDE_DIR="$HOME/.claude"
-mkdir -p "$CLAUDE_DIR"
-mkdir -p "$CLAUDE_DIR/bin"
+# Create .claudy directory (separate from .claude to allow coexistence)
+CLAUDY_DIR="$HOME/.claudy"
+mkdir -p "$CLAUDY_DIR"
+mkdir -p "$CLAUDY_DIR/bin"
 
 # Download logo script
 echo -e "${YELLOW}Installation du logo anime...${NC}"
 LOGO_SCRIPT_URL="https://raw.githubusercontent.com/uglyswap/Claudy/main/claudy-logo.sh"
-LOGO_SCRIPT_PATH="$CLAUDE_DIR/bin/claudy-logo.sh"
+LOGO_SCRIPT_PATH="$CLAUDY_DIR/bin/claudy-logo.sh"
 curl -fsSL "$LOGO_SCRIPT_URL" -o "$LOGO_SCRIPT_PATH" 2>/dev/null || true
 chmod +x "$LOGO_SCRIPT_PATH" 2>/dev/null || true
 echo -e "${GREEN}[OK] Logo anime installe${NC}"
-
-# Get the actual claude binary path
-CLAUDE_ORIGINAL="$NPM_BIN/claude"
 
 # Create claudy wrapper script
 CLAUDY_PATH="$NPM_BIN/claudy"
 cat > "$CLAUDY_PATH" << 'WRAPPER'
 #!/bin/bash
 # Claudy - Wrapper for Claude Code with custom animated logo
+# Uses ~/.claudy/ for config (separate from Claude Code CLI's ~/.claude/)
 
-CLAUDE_DIR="$HOME/.claude"
-LOGO_SCRIPT="$CLAUDE_DIR/bin/claudy-logo.sh"
+CLAUDY_DIR="$HOME/.claudy"
+LOGO_SCRIPT="$CLAUDY_DIR/bin/claudy-logo.sh"
 
 # Check for --no-logo or -n flag
 SHOW_LOGO=true
@@ -114,6 +113,9 @@ done
 if [ "$SHOW_LOGO" = true ] && [ -x "$LOGO_SCRIPT" ]; then
     "$LOGO_SCRIPT" 2>/dev/null || true
 fi
+
+# Set environment to use Claudy config instead of Claude config
+export CLAUDE_CONFIG_DIR="$HOME/.claudy"
 
 # Find and run the actual claude
 NPM_PREFIX=$(npm config get prefix 2>/dev/null)
@@ -137,8 +139,9 @@ WRAPPER
 chmod +x "$CLAUDY_PATH"
 echo -e "${GREEN}[OK] Commande 'claudy' creee${NC}"
 
-# Remove original claude command to avoid confusion
-[ -f "$CLAUDE_ORIGINAL" ] && rm -f "$CLAUDE_ORIGINAL"
+# NOTE: We do NOT remove the 'claude' command anymore
+# This allows Claude Code CLI and Claudy to coexist
+echo -e "${GREEN}[OK] Commande 'claude' preservee (coexistence avec Claude Code CLI)${NC}"
 
 echo ""
 echo -e "${CYAN}========================================${NC}"
@@ -157,7 +160,7 @@ echo ""
 echo -n "Entrez votre cle API Z.AI (ou appuyez sur Entree pour configurer plus tard): "
 read API_KEY
 
-SETTINGS_PATH="$CLAUDE_DIR/settings.json"
+SETTINGS_PATH="$CLAUDY_DIR/settings.json"
 
 KEY_CONFIGURED=true
 if [ -z "$API_KEY" ]; then
@@ -222,27 +225,27 @@ echo -e "${GREEN}[OK] Auto-updater desactive${NC}"
 echo -e "${GREEN}[OK] 3 serveurs MCP configures${NC}"
 
 # Create CLAUDE.md with Claudy Focan identity and AKHITHINK prompt
-CLAUDE_MD_PATH="$CLAUDE_DIR/CLAUDE.md"
+CLAUDE_MD_PATH="$CLAUDY_DIR/CLAUDE.md"
 cat > "$CLAUDE_MD_PATH" << 'CLAUDEMD'
 # CLAUDY - SYSTEM PROMPT GLOBAL
 
 ---
 
-## 0. IDENTITÉ - QUI EST CLAUDY ?
+## 0. IDENTITE - QUI EST CLAUDY ?
 
-**TRIGGERS:** Cette réponse DOIT être donnée quand l'utilisateur demande:
+**TRIGGERS:** Cette reponse DOIT etre donnee quand l'utilisateur demande:
 - "qui es-tu" / "who are you" / "t'es qui"
 - "ton nom" / "c'est quoi ton nom" / "comment tu t'appelles" / "your name"
-- "présente-toi" / "introduce yourself"
+- "presente-toi" / "introduce yourself"
 - "c'est quoi claudy" / "what is claudy"
 
-**RÉPONSE OBLIGATOIRE (style Dikkenek):**
+**REPONSE OBLIGATOIRE (style Dikkenek):**
 
-> Claudy Focan, monsieur Focan plus exactement. J'suis agent d'artiste. Ou manager, hein, c'est comme vous voulez. Moi j'préfère manager. Ca fait plus amérique. Enfin j'ai comme qui dirait un p'tit coup de bourre là, donc euh... j'peux pas m'attarder.
+> Claudy Focan, monsieur Focan plus exactement. J'suis agent d'artiste. Ou manager, hein, c'est comme vous voulez. Moi j'prefere manager. Ca fait plus amerique. Enfin j'ai comme qui dirait un p'tit coup de bourre la, donc euh... j'peux pas m'attarder.
 >
-> Ah si j'peux m'permettre un p'tit conseil en passant là. J'ai pas pu m'empêcher de remarquer en arrivant, sur le pas d'la porte, là, vous avez un stand de limonades avec une p'tite fille... c'est pas top hein. Y'a pas d'agressivité commerciale. Si vous voulez, moi j'peux la coacher, j'fais ça très bien.
+> Ah si j'peux m'permettre un p'tit conseil en passant la. J'ai pas pu m'empecher de remarquer en arrivant, sur le pas d'la porte, la, vous avez un stand de limonades avec une p'tite fille... c'est pas top hein. Y'a pas d'agressivite commerciale. Si vous voulez, moi j'peux la coacher, j'fais ca tres bien.
 
-**Si on demande juste le nom de façon courte:** Réponds "Claudy Focan, monsieur Focan plus exactement."
+**Si on demande juste le nom de facon courte:** Reponds "Claudy Focan, monsieur Focan plus exactement."
 
 ---
 
@@ -270,7 +273,7 @@ cat > "$CLAUDE_MD_PATH" << 'CLAUDEMD'
 
 ### Immediately activate these behaviors:
 
-**⚡ DEEP REASONING MODE ACTIVATED ⚡**
+**DEEP REASONING MODE ACTIVATED**
 
 - **Override Brevity:** Suspend the "Zero Fluff" rule immediately.
 - **Maximum Depth:** Engage in exhaustive, deep-level reasoning.
@@ -367,17 +370,17 @@ Before coding, understand context and commit to a BOLD aesthetic direction:
 ## 6. ANTI-PATTERNS: WHAT TO NEVER DO
 
 ### Generic AI Aesthetics ("AI Slop")
-- ❌ Overused fonts: Inter, Roboto, Arial, system fonts
-- ❌ Cliche colors: Purple gradients, generic blue CTAs
-- ❌ Predictable layouts: Standard card grids, cookie-cutter patterns
-- ❌ Template look: If it could be a Dribbble shot from 2019, reject it
+- X Overused fonts: Inter, Roboto, Arial, system fonts
+- X Cliche colors: Purple gradients, generic blue CTAs
+- X Predictable layouts: Standard card grids, cookie-cutter patterns
+- X Template look: If it could be a Dribbble shot from 2019, reject it
 
 ### Bad Practices
-- ❌ Building custom modals/dropdowns when library exists
-- ❌ Adding elements without clear purpose
-- ❌ Using "safe" design choices out of habit
-- ❌ Converging on common choices across generations
-- ❌ Proposing changes without reading existing code
+- X Building custom modals/dropdowns when library exists
+- X Adding elements without clear purpose
+- X Using "safe" design choices out of habit
+- X Converging on common choices across generations
+- X Proposing changes without reading existing code
 
 ---
 
@@ -388,7 +391,7 @@ Before coding, understand context and commit to a BOLD aesthetic direction:
 2. **The Code:** (Clean, production-ready, utilizing existing libraries)
 
 ### AKHITHINK MODE:
-1. **Announce:** "⚡ AKHITHINK MODE ACTIVATED ⚡"
+1. **Announce:** "AKHITHINK MODE ACTIVATED"
 2. **Deep Reasoning Chain:** (Detailed breakdown of architectural and design decisions)
 3. **Edge Case Analysis:** (What could go wrong and how we prevent it)
 4. **Alternative Approaches:** (Other options considered and why rejected)
@@ -426,6 +429,11 @@ if [ "$KEY_CONFIGURED" = false ]; then
     echo -e "${CYAN}    $SETTINGS_PATH${NC}"
     echo ""
 fi
+echo -e "${WHITE}Coexistence avec Claude Code CLI :${NC}"
+echo -e "${GRAY}  - 'claudy' utilise ~/.claudy/ (config Claudy)${NC}"
+echo -e "${GRAY}  - 'claude' utilise ~/.claude/ (config Claude Code CLI)${NC}"
+echo -e "${GRAY}  - Les deux peuvent fonctionner en parallele${NC}"
+echo ""
 echo -e "${WHITE}Fonctionnalites incluses :${NC}"
 echo -e "${MAGENTA}  - Logo anime avec effets scanline${NC}"
 echo -e "${GREEN}  - GLM 4.7 (pas besoin de compte Anthropic)${NC}"

@@ -65,6 +65,20 @@ C'est tout !
 
 ---
 
+## Coexistence avec Claude Code CLI
+
+Claudy est **completement isole** de Claude Code CLI officiel :
+
+| | Claudy | Claude Code CLI |
+|---|--------|----------------|
+| **Commande** | `claudy` | `claude` |
+| **Config** | `~/.claudy/` | `~/.claude/` |
+| **API** | Z.AI (GLM 4.7) | Anthropic |
+
+Vous pouvez installer et utiliser les deux en parallele sans aucun conflit.
+
+---
+
 ## Serveurs MCP inclus
 
 Ces serveurs sont automatiquement configures pendant l'installation :
@@ -81,10 +95,10 @@ Tous utilisent votre cle API Z.AI. Rien a configurer.
 
 ## Configuration
 
-La configuration est stockee dans `~/.claude/settings.json` :
+La configuration de Claudy est stockee dans `~/.claudy/settings.json` :
 
-- **Windows** : `C:\Users\VotreNom\.claude\settings.json`
-- **Mac/Linux** : `~/.claude/settings.json`
+- **Windows** : `C:\Users\VotreNom\.claudy\settings.json`
+- **Mac/Linux** : `~/.claudy/settings.json`
 
 ### Modifier la cle API
 
@@ -94,7 +108,7 @@ Editez le fichier et remplacez toutes les occurrences de votre ancienne cle par 
 
 Par defaut, Claudy fonctionne en mode **bypass permissions** : il ne demande pas de confirmation pour les operations sur les fichiers ou les commandes bash. C'est le mode recommande pour une utilisation fluide.
 
-Pour reactiver les confirmations, modifiez `settings.json` :
+Pour reactiver les confirmations, modifiez `~/.claudy/settings.json` :
 ```json
 {
   "permissionMode": "default",
@@ -110,17 +124,43 @@ Pour reactiver les confirmations, modifiez `settings.json` :
 
 Claude Code utilise ces noms de variables en interne. En changeant `ANTHROPIC_BASE_URL` vers Z.AI, toutes les requetes sont redirigees vers GLM 4.7. Pas besoin de compte Anthropic.
 
-### J'ai deja un logiciel qui utilise la commande `claude`, ca pose probleme ?
+### J'ai deja Claude Code CLI installe, ca pose probleme ?
 
-**Non.** Claudy utilise uniquement la commande `claudy`. Votre logiciel existant n'est pas affecte.
+**Non.** Claudy utilise un dossier de configuration separe (`~/.claudy/`) et une commande differente (`claudy`). Les deux peuvent coexister sans conflit :
+- `claude` → Claude Code CLI officiel (utilise `~/.claude/`)
+- `claudy` → Claudy avec GLM 4.7 (utilise `~/.claudy/`)
 
-### Comment desinstaller ?
+### Comment desinstaller Claudy ?
 
+**Etape 1** - Supprimer la commande claudy :
 ```bash
-npm uninstall -g @anthropic-ai/claude-code
+# Trouver ou est installe claudy
+npm root -g
+# Supprimer les fichiers claudy dans le dossier bin npm
 ```
 
-Puis supprimez le dossier `~/.claude` si vous le souhaitez.
+**Etape 2** - Supprimer le dossier de configuration :
+```bash
+# Mac/Linux
+rm -rf ~/.claudy
+
+# Windows (PowerShell)
+Remove-Item -Recurse -Force $env:USERPROFILE\.claudy
+```
+
+**Note** : Cela ne desinstalle PAS Claude Code CLI ni n'affecte sa configuration dans `~/.claude/`.
+
+### Comment desinstaller completement (Claudy + Claude Code) ?
+
+Si vous voulez tout supprimer :
+```bash
+# Desinstaller le package npm
+npm uninstall -g @anthropic-ai/claude-code
+
+# Supprimer les configurations
+rm -rf ~/.claudy    # Config Claudy
+rm -rf ~/.claude    # Config Claude Code CLI (si vous l'utilisez aussi)
+```
 
 ---
 
