@@ -141,7 +141,39 @@ for (const pattern of ultrathinkPatterns) {
 
 // Also check for already patched (contains akhithink)
 if (content.includes('"akhithink"')) {
-    console.log('  [INFO] AKHITHINK detection already present');
+    console.log('  [INFO] AKHITHINK string detection already present');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PATCH 5: Replace ultrathink REGEX patterns to also match "akhithink"
+// There are 2 regex patterns that detect ultrathink for the rainbow animation:
+//   1. /\bultrathink\b/i  - used in cyA() function
+//   2. /\bultrathink\b/gi - stored in Yu5 variable
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Regex pattern 1: /\bultrathink\b/i -> /\b(ultrathink|akhithink)\b/i
+const regexPattern1Old = '/\\bultrathink\\b/i';
+const regexPattern1New = '/\\b(ultrathink|akhithink)\\b/i';
+
+if (content.includes(regexPattern1Old) && !content.includes('akhithink)\\b/i')) {
+    content = content.split(regexPattern1Old).join(regexPattern1New);
+    patchCount++;
+    console.log('  [OK] Patched regex /\\bultrathink\\b/i → includes akhithink');
+}
+
+// Regex pattern 2: /\bultrathink\b/gi -> /\b(ultrathink|akhithink)\b/gi
+const regexPattern2Old = '/\\bultrathink\\b/gi';
+const regexPattern2New = '/\\b(ultrathink|akhithink)\\b/gi';
+
+if (content.includes(regexPattern2Old) && !content.includes('akhithink)\\b/gi')) {
+    content = content.split(regexPattern2Old).join(regexPattern2New);
+    patchCount++;
+    console.log('  [OK] Patched regex /\\bultrathink\\b/gi → includes akhithink');
+}
+
+// Check if regex already patched
+if (content.includes('akhithink)\\b/')) {
+    console.log('  [INFO] AKHITHINK regex patterns already present');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
