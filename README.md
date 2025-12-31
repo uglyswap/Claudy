@@ -87,12 +87,23 @@ Choisissez la version **LTS** (recommandée).
 
 ### Étape 3 : Installer Claudy
 
-**Windows** - Ouvrez PowerShell et collez :
+#### Windows - PowerShell (recommandé)
+
+Ouvrez PowerShell et collez :
 ```powershell
 irm https://raw.githubusercontent.com/uglyswap/Claudy/main/install.ps1 | iex
 ```
 
-**Mac / Linux** - Ouvrez le Terminal et collez :
+#### Windows - CMD (Invite de commandes)
+
+Ouvrez CMD et collez :
+```cmd
+curl -fsSL https://raw.githubusercontent.com/uglyswap/Claudy/main/install.ps1 -o %TEMP%\install.ps1 && powershell -ExecutionPolicy Bypass -File %TEMP%\install.ps1
+```
+
+#### Mac / Linux
+
+Ouvrez le Terminal et collez :
 ```bash
 curl -fsSL https://raw.githubusercontent.com/uglyswap/Claudy/main/install.sh | bash
 ```
@@ -111,6 +122,8 @@ claudy
 
 C'est tout !
 
+**Fonctionne dans :** CMD, PowerShell, PowerShell Core, Terminal Windows, et tout terminal sur Mac/Linux.
+
 ---
 
 ## Coexistence avec Claude Code CLI
@@ -122,6 +135,7 @@ Claudy est **complètement isolé** de Claude Code CLI officiel :
 | **Commande** | `claudy` | `claude` |
 | **Config** | `~/.claudy/` | `~/.claude/` |
 | **API** | Z.AI (GLM 4.7) | Anthropic |
+| **CLI file** | `cli-claudy.js` | `cli.js` |
 
 Vous pouvez installer et utiliser les deux en parallèle sans aucun conflit.
 
@@ -150,7 +164,12 @@ La configuration de Claudy est stockée dans `~/.claudy/settings.json` :
 
 ### Modifier la clé API
 
-Éditez le fichier et remplacez toutes les occurrences de votre ancienne clé par la nouvelle.
+Utilisez la commande intégrée :
+```
+/cle-api <votre_nouvelle_cle>
+```
+
+Ou éditez le fichier et remplacez toutes les occurrences de votre ancienne clé par la nouvelle.
 
 ### Mode permissions
 
@@ -175,8 +194,16 @@ Claude Code utilise ces noms de variables en interne. En changeant `ANTHROPIC_BA
 ### J'ai déjà Claude Code CLI installé, ça pose problème ?
 
 **Non.** Claudy utilise un dossier de configuration séparé (`~/.claudy/`) et une commande différente (`claudy`). Les deux peuvent coexister sans conflit :
-- `claude` → Claude Code CLI officiel (utilise `~/.claude/`)
-- `claudy` → Claudy avec GLM 4.7 (utilise `~/.claudy/`)
+- `claude` → Claude Code CLI officiel (utilise `~/.claude/` et `cli.js`)
+- `claudy` → Claudy avec GLM 4.7 (utilise `~/.claudy/` et `cli-claudy.js`)
+
+### La commande claudy ne fonctionne pas dans CMD ?
+
+Après l'installation, **fermez et rouvrez votre terminal** pour que la commande soit reconnue. Si le problème persiste, vérifiez que le dossier npm est dans votre PATH :
+```cmd
+npm config get prefix
+```
+Le dossier retourné doit être dans votre variable d'environnement PATH.
 
 ### Comment désinstaller Claudy ?
 
