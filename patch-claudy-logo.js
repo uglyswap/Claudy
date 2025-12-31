@@ -11,6 +11,7 @@
  * - CLAUDY ASCII logo with gradient colors
  * - AKHITHINK detection for rainbow animation
  * - All "Claude Code" text replaced with "Claudy"
+ * - Skills loaded from ~/.claudy/skills/ (not ~/.claude/skills/)
  */
 
 const fs = require('fs');
@@ -206,6 +207,21 @@ if (content.includes('akhithink)\\b/')) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// PATCH 6: Replace .claude/skills with .claudy/skills for user skills
+// This ensures Claudy loads skills from ~/.claudy/skills/ instead of ~/.claude/skills/
+// ═══════════════════════════════════════════════════════════════════════════
+
+const skillsPathOld = '.claude/skills';
+const skillsPathNew = '.claudy/skills';
+
+const skillsOccurrences = (content.match(/\.claude\/skills/g) || []).length;
+if (skillsOccurrences > 0) {
+    content = content.split(skillsPathOld).join(skillsPathNew);
+    patchCount++;
+    console.log(`  [OK] Replaced ${skillsOccurrences}x ".claude/skills" → ".claudy/skills"`);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // WRITE PATCHED COPY (NOT modifying original!)
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -215,3 +231,4 @@ fs.writeFileSync(claudyCliPath, content, 'utf8');
 console.log(`[DONE] Created cli-claudy.js with ${patchCount} patches`);
 console.log('[INFO] Original cli.js is UNCHANGED - "claude" command works normally');
 console.log('[INFO] Claudy wrapper should use cli-claudy.js');
+console.log('[INFO] User skills should be placed in ~/.claudy/skills/<skill-name>/SKILL.md');
