@@ -5,7 +5,11 @@
     Claudy is installed separately from Claude Code CLI - both can coexist.
 
 .EXAMPLE
+    PowerShell / PowerShell Core:
     irm https://raw.githubusercontent.com/uglyswap/Claudy/main/install.ps1 | iex
+
+    CMD (Invite de commandes):
+    curl -fsSL https://raw.githubusercontent.com/uglyswap/Claudy/main/install.ps1 -o %TEMP%\install.ps1 && powershell -ExecutionPolicy Bypass -File %TEMP%\install.ps1
 #>
 
 $ErrorActionPreference = "Stop"
@@ -204,14 +208,21 @@ $claudyWrapperContent | Out-File -FilePath $claudyWrapperPath -Encoding utf8 -Fo
 Write-Host "[OK] Wrapper Claudy cree (utilise cli-claudy.js)" -ForegroundColor Green
 
 # Create batch file for cmd.exe compatibility
+# This works with both pwsh (PowerShell Core) and powershell (Windows PowerShell)
 $claudyCmdPath = Join-Path $npmPrefix "claudy.cmd"
 $claudyCmdContent = @"
 @echo off
 title claudy
-pwsh -NoProfile -ExecutionPolicy Bypass -File "%~dp0claudy.ps1" %*
+REM Try PowerShell Core (pwsh) first, fall back to Windows PowerShell
+where pwsh >nul 2>nul
+if %ERRORLEVEL% EQU 0 (
+    pwsh -NoProfile -ExecutionPolicy Bypass -File "%~dp0claudy.ps1" %*
+) else (
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0claudy.ps1" %*
+)
 "@
 $claudyCmdContent | Out-File -FilePath $claudyCmdPath -Encoding ascii -Force
-Write-Host "[OK] Commande 'claudy' creee" -ForegroundColor Green
+Write-Host "[OK] Commande 'claudy' creee (CMD + PowerShell)" -ForegroundColor Green
 
 # NOTE: We do NOT touch the 'claude' command
 # It uses the original cli.js (not patched)
@@ -354,6 +365,8 @@ Write-Host ""
 Write-Host "Pour utiliser Claudy, tapez simplement :" -ForegroundColor White
 Write-Host ""
 Write-Host "    claudy" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Fonctionne dans : CMD, PowerShell, Terminal Windows" -ForegroundColor Gray
 Write-Host ""
 Write-Host "Options du logo anime:" -ForegroundColor White
 Write-Host "    claudy --no-logo    Desactive le logo anime" -ForegroundColor Gray
