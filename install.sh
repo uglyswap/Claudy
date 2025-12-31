@@ -62,6 +62,7 @@ echo -e "${GREEN}[OK] npm${NC}"
 
 NPM_PREFIX=$(npm config get prefix)
 NPM_BIN="$NPM_PREFIX/bin"
+NPM_ROOT=$(npm root -g)
 
 echo ""
 echo -e "${YELLOW}Installation de Claude Code v${CLAUDE_CODE_VERSION}...${NC}"
@@ -74,6 +75,55 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 echo -e "${GREEN}[OK] Claude Code v${CLAUDE_CODE_VERSION} installe${NC}"
+
+# ============================================
+# PATCH CLI.JS TO SHOW CLAUDY BRANDING
+# ============================================
+echo -e "${YELLOW}Application du branding Claudy...${NC}"
+CLI_PATH="$NPM_ROOT/@anthropic-ai/claude-code/cli.js"
+if [ -f "$CLI_PATH" ]; then
+    # Create backup
+    if [ ! -f "$CLI_PATH.backup" ]; then
+        cp "$CLI_PATH" "$CLI_PATH.backup"
+    fi
+    
+    # Apply patches using sed
+    PATCH_APPLIED=false
+    
+    # Replace "Claude Code v" with "Claudy v"
+    if grep -q 'Claude Code v' "$CLI_PATH"; then
+        sed -i.tmp 's/Claude Code v/Claudy v/g' "$CLI_PATH"
+        PATCH_APPLIED=true
+    fi
+    
+    # Replace "Claude Code" (in quotes) with "Claudy"
+    if grep -q '"Claude Code"' "$CLI_PATH"; then
+        sed -i.tmp 's/"Claude Code"/"Claudy"/g' "$CLI_PATH"
+        PATCH_APPLIED=true
+    fi
+    
+    # Replace logo parts
+    if grep -q '"▛███▜"' "$CLI_PATH"; then
+        sed -i.tmp 's/"▛███▜"/"LAUDY"/g' "$CLI_PATH"
+        PATCH_APPLIED=true
+    fi
+    
+    if grep -q '"█████"' "$CLI_PATH"; then
+        sed -i.tmp 's/"█████"/"FOCAN"/g' "$CLI_PATH"
+        PATCH_APPLIED=true
+    fi
+    
+    # Clean up temp files
+    rm -f "$CLI_PATH.tmp"
+    
+    if [ "$PATCH_APPLIED" = true ]; then
+        echo -e "${GREEN}[OK] Branding Claudy applique${NC}"
+    else
+        echo -e "${GRAY}[INFO] Branding deja applique ou non necessaire${NC}"
+    fi
+else
+    echo -e "${YELLOW}[WARN] cli.js non trouve pour le branding${NC}"
+fi
 
 # Create .claudy directory (separate from .claude to allow coexistence)
 CLAUDY_DIR="$HOME/.claudy"

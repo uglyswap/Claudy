@@ -52,6 +52,7 @@ Write-Host "[OK] npm" -ForegroundColor Green
 
 # Get npm global path
 $npmPrefix = npm config get prefix
+$npmRoot = npm root -g
 
 Write-Host ""
 Write-Host "Installation de Claude Code v$CLAUDE_CODE_VERSION..." -ForegroundColor Yellow
@@ -64,6 +65,60 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 Write-Host "[OK] Claude Code v$CLAUDE_CODE_VERSION installe" -ForegroundColor Green
+
+# ============================================
+# PATCH CLI.JS TO SHOW CLAUDY BRANDING
+# ============================================
+Write-Host "Application du branding Claudy..." -ForegroundColor Yellow
+$cliPath = Join-Path $npmRoot "@anthropic-ai\claude-code\cli.js"
+if (Test-Path $cliPath) {
+    try {
+        $cliContent = Get-Content $cliPath -Raw -Encoding utf8
+        $patchApplied = $false
+        
+        # Replace "Claude Code v" with "Claudy v"
+        if ($cliContent -match 'Claude Code v') {
+            $cliContent = $cliContent -replace 'Claude Code v', 'Claudy v'
+            $patchApplied = $true
+        }
+        
+        # Replace "Claude Code" (in quotes) with "Claudy"
+        if ($cliContent -match '"Claude Code"') {
+            $cliContent = $cliContent -replace '"Claude Code"', '"Claudy"'
+            $patchApplied = $true
+        }
+        
+        # Replace logo parts with CLAUDY text
+        # Original: "▛███▜" -> "LAUDY"
+        if ($cliContent -match '"▛███▜"') {
+            $cliContent = $cliContent -replace '"▛███▜"', '"LAUDY"'
+            $patchApplied = $true
+        }
+        
+        # Original: "█████" -> "FOCAN"
+        if ($cliContent -match '"█████"') {
+            $cliContent = $cliContent -replace '"█████"', '"FOCAN"'
+            $patchApplied = $true
+        }
+        
+        if ($patchApplied) {
+            # Create backup
+            $backupPath = $cliPath + ".backup"
+            if (-not (Test-Path $backupPath)) {
+                Copy-Item $cliPath $backupPath
+            }
+            # Write patched file
+            [System.IO.File]::WriteAllText($cliPath, $cliContent, [System.Text.Encoding]::UTF8)
+            Write-Host "[OK] Branding Claudy applique" -ForegroundColor Green
+        } else {
+            Write-Host "[INFO] Branding deja applique ou non necessaire" -ForegroundColor Gray
+        }
+    } catch {
+        Write-Host "[WARN] Impossible d'appliquer le branding: $_" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "[WARN] cli.js non trouve pour le branding" -ForegroundColor Yellow
+}
 
 # Create .claudy directory (separate from .claude to allow coexistence)
 $claudyDir = Join-Path $env:USERPROFILE ".claudy"
