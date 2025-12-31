@@ -2,7 +2,12 @@
 #
 # Claudy Installer for Linux/macOS
 # Pre-configured with GLM 4.7 (Z.AI), MCP servers, ASCII logo, and AKHITHINK prompt
-# Claudy is installed separately from Claude Code CLI - both can coexist.
+# Claudy is installed INDEPENDENTLY from Claude Code CLI - completely separate installations.
+#
+# This means:
+# - Uninstalling Claude Code does NOT affect Claudy
+# - Updating Claude Code does NOT affect Claudy
+# - Both programs are 100% independent
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/uglyswap/Claudy/main/install.sh | bash
@@ -28,6 +33,7 @@ echo -e "${CYAN}========================================${NC}"
 echo -e "${CYAN}         CLAUDY INSTALLER              ${NC}"
 echo -e "${CYAN}       Powered by GLM 4.7 (Z.AI)       ${NC}"
 echo -e "${GRAY}   Claude Code v${CLAUDE_CODE_VERSION} (frozen)    ${NC}"
+echo -e "${YELLOW}      INSTALLATION INDEPENDANTE        ${NC}"
 echo -e "${CYAN}========================================${NC}"
 echo ""
 
@@ -60,65 +66,86 @@ if ! command -v npm &> /dev/null; then
 fi
 echo -e "${GREEN}[OK] npm${NC}"
 
-NPM_PREFIX=$(npm config get prefix)
-NPM_BIN="$NPM_PREFIX/bin"
-NPM_ROOT=$(npm root -g)
+# ============================================
+# CREATE ISOLATED CLAUDY INSTALLATION
+# ============================================
+CLAUDY_DIR="$HOME/.claudy"
+CLAUDY_LIB_DIR="$CLAUDY_DIR/lib"
+CLAUDY_BIN_DIR="$CLAUDY_DIR/bin"
+
+# Create directories
+mkdir -p "$CLAUDY_DIR"
+mkdir -p "$CLAUDY_LIB_DIR"
+mkdir -p "$CLAUDY_BIN_DIR"
 
 echo ""
-echo -e "${YELLOW}Installation de Claude Code v${CLAUDE_CODE_VERSION}...${NC}"
+echo -e "${YELLOW}Installation de Claude Code v${CLAUDE_CODE_VERSION} dans ~/.claudy/lib/...${NC}"
+echo -e "${GRAY}(Installation isolee, independante de npm global)${NC}"
 
-# Install claude-code with pinned version
-npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" > /dev/null 2>&1
+# Initialize package.json in lib directory if not exists
+PACKAGE_JSON_PATH="$CLAUDY_LIB_DIR/package.json"
+if [ ! -f "$PACKAGE_JSON_PATH" ]; then
+    cat > "$PACKAGE_JSON_PATH" << 'EOF'
+{
+  "name": "claudy-local",
+  "version": "1.0.0",
+  "description": "Claudy isolated installation",
+  "private": true
+}
+EOF
+fi
+
+# Install claude-code locally in ~/.claudy/lib/
+cd "$CLAUDY_LIB_DIR"
+npm install "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" > /dev/null 2>&1
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}[ERREUR] Echec de l'installation.${NC}"
     exit 1
 fi
-echo -e "${GREEN}[OK] Claude Code v${CLAUDE_CODE_VERSION} installe${NC}"
+echo -e "${GREEN}[OK] Claude Code v${CLAUDE_CODE_VERSION} installe dans ~/.claudy/lib/${NC}"
 
 # ============================================
 # PATCH CLI.JS WITH CLAUDY BRANDING & LOGO
 # ============================================
 echo -e "${YELLOW}Application du branding Claudy...${NC}"
 
-# Download and run the patch script
+# Download and run the patch script with local path
 PATCH_SCRIPT_URL="https://raw.githubusercontent.com/uglyswap/Claudy/main/patch-claudy-logo.js"
 PATCH_SCRIPT_PATH="/tmp/patch-claudy-logo.js"
 
 if curl -fsSL "$PATCH_SCRIPT_URL" -o "$PATCH_SCRIPT_PATH" 2>/dev/null; then
-    node "$PATCH_SCRIPT_PATH" 2>&1 || true
+    # Pass the local installation path as argument
+    node "$PATCH_SCRIPT_PATH" "$CLAUDY_LIB_DIR" 2>&1 || true
     rm -f "$PATCH_SCRIPT_PATH"
     echo -e "${MAGENTA}[OK] Logo CLAUDY avec degrade installe${NC}"
 else
     echo -e "${YELLOW}[WARN] Impossible de telecharger le patch logo${NC}"
 fi
 
-# Create .claudy directory (separate from .claude to allow coexistence)
-CLAUDY_DIR="$HOME/.claudy"
-mkdir -p "$CLAUDY_DIR"
-mkdir -p "$CLAUDY_DIR/bin"
-
 # Download logo script
 echo -e "${YELLOW}Installation du logo anime...${NC}"
 LOGO_SCRIPT_URL="https://raw.githubusercontent.com/uglyswap/Claudy/main/claudy-logo.sh"
-LOGO_SCRIPT_PATH="$CLAUDY_DIR/bin/claudy-logo.sh"
+LOGO_SCRIPT_PATH="$CLAUDY_BIN_DIR/claudy-logo.sh"
 curl -fsSL "$LOGO_SCRIPT_URL" -o "$LOGO_SCRIPT_PATH" 2>/dev/null || true
 chmod +x "$LOGO_SCRIPT_PATH" 2>/dev/null || true
 echo -e "${GREEN}[OK] Logo anime installe${NC}"
 
-# Create claudy wrapper script with env var injection
-CLAUDY_PATH="$NPM_BIN/claudy"
-cat > "$CLAUDY_PATH" << 'WRAPPER'
+# ============================================
+# CREATE CLAUDY WRAPPER SCRIPT
+# ============================================
+CLAUDY_WRAPPER_PATH="$CLAUDY_BIN_DIR/claudy"
+cat > "$CLAUDY_WRAPPER_PATH" << 'WRAPPER'
 #!/bin/bash
-# Claudy - Wrapper for Claude Code with custom animated logo
-# Uses ~/.claudy/ for config (separate from Claude Code CLI's ~/.claude/)
-# IMPORTANT: Exports env vars directly because CLAUDE_CONFIG_DIR is not respected
-# IMPORTANT: Uses cli-claudy.js (patched) instead of cli.js to avoid affecting 'claude' command
+# Claudy - Independent installation wrapper
+# Uses ~/.claudy/ for EVERYTHING (config + code)
+# Completely independent from Claude Code CLI
 
 # Set terminal title to "claudy"
 echo -ne "\033]0;claudy\007"
 
 CLAUDY_DIR="$HOME/.claudy"
+CLAUDY_LIB_DIR="$CLAUDY_DIR/lib"
 LOGO_SCRIPT="$CLAUDY_DIR/bin/claudy-logo.sh"
 SETTINGS_PATH="$CLAUDY_DIR/settings.json"
 
@@ -138,10 +165,8 @@ if [ "$SHOW_LOGO" = true ] && [ -x "$LOGO_SCRIPT" ]; then
     "$LOGO_SCRIPT" 2>/dev/null || true
 fi
 
-# CRITICAL FIX: Read settings.json and export env vars directly
-# CLAUDE_CONFIG_DIR is NOT respected by Claude Code 2.0.74
+# Read settings.json and export env vars
 if [ -f "$SETTINGS_PATH" ]; then
-    # Use Python to parse JSON (more portable than jq)
     if command -v python3 &> /dev/null; then
         eval $(python3 -c "
 import json
@@ -151,7 +176,6 @@ try:
         settings = json.load(f)
     env_vars = settings.get('env', {})
     for key, value in env_vars.items():
-        # Escape single quotes in value
         escaped_value = str(value).replace(\"'\", \"'\\\"'\\\"'\")
         print(f\"export {key}='{escaped_value}'\")
 except Exception as e:
@@ -174,46 +198,23 @@ except Exception as e:
     fi
 fi
 
-# Also set CLAUDE_CONFIG_DIR just in case future versions support it
+# Set config dir
 export CLAUDE_CONFIG_DIR="$HOME/.claudy"
 
-# Find cli-claudy.js (patched version with Claudy branding)
-NPM_PREFIX=$(npm config get prefix 2>/dev/null)
-NPM_ROOT=$(npm root -g 2>/dev/null)
+# Path to our isolated cli-claudy.js
+CLAUDY_EXE="$CLAUDY_LIB_DIR/node_modules/@anthropic-ai/claude-code/cli-claudy.js"
 
-# Possible paths for cli-claudy.js
-CLAUDY_BIN_1="$NPM_PREFIX/lib/node_modules/@anthropic-ai/claude-code/cli-claudy.js"
-CLAUDY_BIN_2="$NPM_ROOT/@anthropic-ai/claude-code/cli-claudy.js"
-CLAUDY_BIN=""
-
-# Try to find cli-claudy.js
-if [ -f "$CLAUDY_BIN_1" ]; then
-    CLAUDY_BIN="$CLAUDY_BIN_1"
-elif [ -f "$CLAUDY_BIN_2" ]; then
-    CLAUDY_BIN="$CLAUDY_BIN_2"
-fi
-
-# ============================================
 # AUTO-REPAIR: If cli-claudy.js doesn't exist, recreate it
-# ============================================
-if [ -z "$CLAUDY_BIN" ]; then
+if [ ! -f "$CLAUDY_EXE" ]; then
     echo -e "\033[1;33m[AUTO-REPAIR] cli-claudy.js manquant, re-creation en cours...\033[0m"
     
     PATCH_URL="https://raw.githubusercontent.com/uglyswap/Claudy/main/patch-claudy-logo.js"
     PATCH_PATH="/tmp/patch-claudy-logo.js"
     
-    # Download and run patch
     if curl -fsSL "$PATCH_URL" -o "$PATCH_PATH" 2>/dev/null; then
-        if node "$PATCH_PATH" 2>/dev/null; then
+        if node "$PATCH_PATH" "$CLAUDY_LIB_DIR" 2>/dev/null; then
             echo -e "\033[0;32m[AUTO-REPAIR] cli-claudy.js recree avec succes\033[0m"
             rm -f "$PATCH_PATH"
-            
-            # Try to find it again after patch
-            if [ -f "$CLAUDY_BIN_1" ]; then
-                CLAUDY_BIN="$CLAUDY_BIN_1"
-            elif [ -f "$CLAUDY_BIN_2" ]; then
-                CLAUDY_BIN="$CLAUDY_BIN_2"
-            fi
         else
             echo -e "\033[1;33m[WARN] Impossible d'executer le patch\033[0m"
             rm -f "$PATCH_PATH"
@@ -223,34 +224,60 @@ if [ -z "$CLAUDY_BIN" ]; then
     fi
 fi
 
-# Run cli-claudy.js if found
-if [ -n "$CLAUDY_BIN" ] && [ -f "$CLAUDY_BIN" ]; then
-    exec node "$CLAUDY_BIN" "${ARGS[@]}"
+# Fallback to cli.js if cli-claudy.js still doesn't exist
+if [ ! -f "$CLAUDY_EXE" ]; then
+    CLAUDY_EXE="$CLAUDY_LIB_DIR/node_modules/@anthropic-ai/claude-code/cli.js"
 fi
 
-# Final fallback: use original cli.js (if patch couldn't be applied)
-CLAUDE_BIN="$NPM_PREFIX/lib/node_modules/@anthropic-ai/claude-code/cli.js"
-if [ -f "$CLAUDE_BIN" ]; then
-    echo -e "\033[1;33m[WARN] Utilisation de cli.js (branding Claude au lieu de Claudy)\033[0m"
-    exec node "$CLAUDE_BIN" "${ARGS[@]}"
+if [ -f "$CLAUDY_EXE" ]; then
+    exec node "$CLAUDY_EXE" "${ARGS[@]}"
+else
+    echo -e "\033[0;31m[ERREUR] Claudy introuvable. Reinstallez avec:\033[0m"
+    echo -e "\033[1;33mcurl -fsSL https://raw.githubusercontent.com/uglyswap/Claudy/main/install.sh | bash\033[0m"
+    exit 1
 fi
-
-CLAUDE_BIN="$NPM_ROOT/@anthropic-ai/claude-code/cli.js"
-if [ -f "$CLAUDE_BIN" ]; then
-    echo -e "\033[1;33m[WARN] Utilisation de cli.js (branding Claude au lieu de Claudy)\033[0m"
-    exec node "$CLAUDE_BIN" "${ARGS[@]}"
-fi
-
-echo -e "\033[0;31m[ERREUR] Claude Code introuvable\033[0m"
-exit 1
 WRAPPER
 
-chmod +x "$CLAUDY_PATH"
-echo -e "${GREEN}[OK] Commande 'claudy' creee${NC}"
+chmod +x "$CLAUDY_WRAPPER_PATH"
+echo -e "${GREEN}[OK] Wrapper Claudy cree dans ~/.claudy/bin/${NC}"
 
-# NOTE: We do NOT remove the 'claude' command anymore
-# This allows Claude Code CLI and Claudy to coexist
-echo -e "${GREEN}[OK] Commande 'claude' preservee (coexistence avec Claude Code CLI)${NC}"
+# ============================================
+# ADD CLAUDY TO PATH
+# ============================================
+echo -e "${YELLOW}Configuration du PATH...${NC}"
+
+# Detect shell and config file
+SHELL_NAME=$(basename "$SHELL")
+case "$SHELL_NAME" in
+    bash)
+        if [ -f "$HOME/.bash_profile" ]; then
+            SHELL_RC="$HOME/.bash_profile"
+        else
+            SHELL_RC="$HOME/.bashrc"
+        fi
+        ;;
+    zsh)
+        SHELL_RC="$HOME/.zshrc"
+        ;;
+    *)
+        SHELL_RC="$HOME/.profile"
+        ;;
+esac
+
+# Add to PATH if not already there
+PATH_LINE='export PATH="$HOME/.claudy/bin:$PATH"'
+if ! grep -q ".claudy/bin" "$SHELL_RC" 2>/dev/null; then
+    echo "" >> "$SHELL_RC"
+    echo "# Claudy - Independent Claude Code installation" >> "$SHELL_RC"
+    echo "$PATH_LINE" >> "$SHELL_RC"
+    echo -e "${GREEN}[OK] ~/.claudy/bin/ ajoute au PATH dans $SHELL_RC${NC}"
+    echo -e "${YELLOW}[INFO] Executez 'source $SHELL_RC' ou redemarrez votre terminal${NC}"
+else
+    echo -e "${GREEN}[OK] ~/.claudy/bin/ deja dans le PATH${NC}"
+fi
+
+# Also add to current session
+export PATH="$HOME/.claudy/bin:$PATH"
 
 echo ""
 echo -e "${CYAN}========================================${NC}"
@@ -353,25 +380,18 @@ fi
 # ============================================
 echo -e "${YELLOW}Installation des skills Claudy...${NC}"
 
-# Create skills directory in ~/.claudy/skills/ (Claudy's config directory)
-# Also install in ~/.claude/skills/ for compatibility
-SKILLS_DIRS=(
-    "$CLAUDY_DIR/skills"
-    "$HOME/.claude/skills"
-)
+# Create skills directory in ~/.claudy/skills/
+SKILLS_DIR="$CLAUDY_DIR/skills"
+mkdir -p "$SKILLS_DIR"
 
-for SKILLS_DIR in "${SKILLS_DIRS[@]}"; do
-    mkdir -p "$SKILLS_DIR"
-    
-    # Install /cle-api skill for changing Z.AI API key
-    CLE_API_SKILL_DIR="$SKILLS_DIR/cle-api"
-    mkdir -p "$CLE_API_SKILL_DIR"
-    
-    CLE_API_SKILL_URL="https://raw.githubusercontent.com/uglyswap/Claudy/main/skills/cle-api/SKILL.md"
-    CLE_API_SKILL_PATH="$CLE_API_SKILL_DIR/SKILL.md"
-    
-    curl -fsSL "$CLE_API_SKILL_URL" -o "$CLE_API_SKILL_PATH" 2>/dev/null || true
-done
+# Install /cle-api skill for changing Z.AI API key
+CLE_API_SKILL_DIR="$SKILLS_DIR/cle-api"
+mkdir -p "$CLE_API_SKILL_DIR"
+
+CLE_API_SKILL_URL="https://raw.githubusercontent.com/uglyswap/Claudy/main/skills/cle-api/SKILL.md"
+CLE_API_SKILL_PATH="$CLE_API_SKILL_DIR/SKILL.md"
+
+curl -fsSL "$CLE_API_SKILL_URL" -o "$CLE_API_SKILL_PATH" 2>/dev/null || true
 
 echo -e "${MAGENTA}[OK] Skill /cle-api installe (changer la cle API)${NC}"
 
@@ -393,10 +413,19 @@ if [ "$KEY_CONFIGURED" = false ]; then
     echo -e "${CYAN}    $SETTINGS_PATH${NC}"
     echo ""
 fi
-echo -e "${WHITE}Coexistence avec Claude Code CLI :${NC}"
-echo -e "${GRAY}  - 'claudy' utilise ~/.claudy/ (config Claudy) + cli-claudy.js${NC}"
-echo -e "${GRAY}  - 'claude' utilise ~/.claude/ (config Claude Code CLI) + cli.js${NC}"
-echo -e "${GRAY}  - Les deux peuvent fonctionner en parallele${NC}"
+echo -e "${CYAN}========================================${NC}"
+echo -e "${CYAN}       INDEPENDANCE TOTALE             ${NC}"
+echo -e "${CYAN}========================================${NC}"
+echo ""
+echo -e "${WHITE}Claudy est 100% independant de Claude Code :${NC}"
+echo -e "${GRAY}  - Installation isolee : ~/.claudy/lib/${NC}"
+echo -e "${GRAY}  - Configuration isolee : ~/.claudy/settings.json${NC}"
+echo -e "${GRAY}  - Binaires isoles : ~/.claudy/bin/${NC}"
+echo ""
+echo -e "${GREEN}Actions sans impact sur Claudy :${NC}"
+echo -e "${GRAY}  - Desinstaller Claude Code (npm uninstall -g)${NC}"
+echo -e "${GRAY}  - Mettre a jour Claude Code (npm update)${NC}"
+echo -e "${GRAY}  - Modifier ~/.claude/ (config Claude Code)${NC}"
 echo ""
 echo -e "${WHITE}Fonctionnalites incluses :${NC}"
 echo -e "${MAGENTA}  - Logo CLAUDY avec degrade jaune-magenta${NC}"
@@ -405,16 +434,18 @@ echo -e "${GREEN}  - Vision IA (images, videos, OCR)${NC}"
 echo -e "${GREEN}  - Recherche web${NC}"
 echo -e "${GREEN}  - Lecture de pages web${NC}"
 echo -e "${GREEN}  - Mode sans permissions (pas de confirmations)${NC}"
-echo -e "${GREEN}  - Version figee (pas de mises a jour auto)${NC}"
+echo -e "${GREEN}  - Version figee ${CLAUDE_CODE_VERSION} (pas de mises a jour auto)${NC}"
 echo -e "${MAGENTA}  - AKHITHINK: Deep reasoning mode${NC}"
 echo -e "${MAGENTA}  - Identite Claudy Focan (Dikkenek)${NC}"
 echo ""
 echo -e "${WHITE}Commandes speciales :${NC}"
 echo -e "${CYAN}  - /cle-api <nouvelle_cle>  Changer la cle API Z.AI${NC}"
 echo ""
-echo -e "${WHITE}Resilience aux mises a jour npm :${NC}"
-echo -e "${GRAY}  - Si cli-claudy.js est efface par npm update,${NC}"
-echo -e "${GRAY}    il sera automatiquement recree au prochain lancement${NC}"
-echo ""
-echo -e "${GRAY}Version Claude Code: ${CLAUDE_CODE_VERSION} (frozen)${NC}"
+echo -e "${GRAY}Structure d'installation :${NC}"
+echo -e "${GRAY}  ~/.claudy/${NC}"
+echo -e "${GRAY}    ├── bin/           (claudy wrapper)${NC}"
+echo -e "${GRAY}    ├── lib/           (node_modules isoles)${NC}"
+echo -e "${GRAY}    ├── skills/        (skills Claudy)${NC}"
+echo -e "${GRAY}    ├── settings.json  (configuration)${NC}"
+echo -e "${GRAY}    └── CLAUDE.md      (system prompt)${NC}"
 echo ""
