@@ -88,15 +88,20 @@ curl -fsSL "$LOGO_SCRIPT_URL" -o "$LOGO_SCRIPT_PATH" 2>/dev/null || true
 chmod +x "$LOGO_SCRIPT_PATH" 2>/dev/null || true
 echo -e "${GREEN}[OK] Logo anime installe${NC}"
 
-# Create claudy wrapper script
+# Create claudy wrapper script with env var injection
 CLAUDY_PATH="$NPM_BIN/claudy"
 cat > "$CLAUDY_PATH" << 'WRAPPER'
 #!/bin/bash
 # Claudy - Wrapper for Claude Code with custom animated logo
 # Uses ~/.claudy/ for config (separate from Claude Code CLI's ~/.claude/)
+# IMPORTANT: Exports env vars directly because CLAUDE_CONFIG_DIR is not respected
+
+# Set terminal title to "claudy"
+echo -ne "\033]0;claudy\007"
 
 CLAUDY_DIR="$HOME/.claudy"
 LOGO_SCRIPT="$CLAUDY_DIR/bin/claudy-logo.sh"
+SETTINGS_PATH="$CLAUDY_DIR/settings.json"
 
 # Check for --no-logo or -n flag
 SHOW_LOGO=true
@@ -114,7 +119,43 @@ if [ "$SHOW_LOGO" = true ] && [ -x "$LOGO_SCRIPT" ]; then
     "$LOGO_SCRIPT" 2>/dev/null || true
 fi
 
-# Set environment to use Claudy config instead of Claude config
+# CRITICAL FIX: Read settings.json and export env vars directly
+# CLAUDE_CONFIG_DIR is NOT respected by Claude Code 2.0.74
+if [ -f "$SETTINGS_PATH" ]; then
+    # Use Python to parse JSON (more portable than jq)
+    if command -v python3 &> /dev/null; then
+        eval $(python3 -c "
+import json
+import sys
+try:
+    with open('$SETTINGS_PATH', 'r') as f:
+        settings = json.load(f)
+    env_vars = settings.get('env', {})
+    for key, value in env_vars.items():
+        # Escape single quotes in value
+        escaped_value = str(value).replace("'", "'\"'\"'")
+        print(f\"export {key}='{escaped_value}'\")
+except Exception as e:
+    sys.stderr.write(f'Warning: Could not parse settings.json: {e}\\n')
+" 2>/dev/null)
+    elif command -v python &> /dev/null; then
+        eval $(python -c "
+import json
+import sys
+try:
+    with open('$SETTINGS_PATH', 'r') as f:
+        settings = json.load(f)
+    env_vars = settings.get('env', {})
+    for key, value in env_vars.items():
+        escaped_value = str(value).replace("'", "'\"'\"'")
+        print('export {}=\'{}\''.format(key, escaped_value))
+except Exception as e:
+    sys.stderr.write('Warning: Could not parse settings.json: {}\\n'.format(e))
+" 2>/dev/null)
+    fi
+fi
+
+# Also set CLAUDE_CONFIG_DIR just in case future versions support it
 export CLAUDE_CONFIG_DIR="$HOME/.claudy"
 
 # Find and run the actual claude

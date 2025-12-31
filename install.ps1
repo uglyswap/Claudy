@@ -94,9 +94,14 @@ $claudyWrapperContent = @'
 #!/usr/bin/env pwsh
 # Claudy - Wrapper for Claude Code with custom logo
 # Uses ~/.claudy/ for config (separate from Claude Code CLI's ~/.claude/)
+# IMPORTANT: Exports env vars directly because CLAUDE_CONFIG_DIR is not respected
+
+# Set terminal title to "claudy"
+$Host.UI.RawUI.WindowTitle = "claudy"
 
 $claudyDir = Join-Path $env:USERPROFILE ".claudy"
 $modulePath = Join-Path $claudyDir "modules\Claudy-Logo.psm1"
+$settingsPath = Join-Path $claudyDir "settings.json"
 
 # Check for --no-logo or -n flag
 $showLogo = $true
@@ -119,8 +124,24 @@ if ($showLogo -and (Test-Path $modulePath)) {
     }
 }
 
-# Set environment to use Claudy config
-$env:CLAUDE_CONFIG_DIR = Join-Path $env:USERPROFILE ".claudy"
+# CRITICAL FIX: Read settings.json and export env vars directly
+# CLAUDE_CONFIG_DIR is NOT respected by Claude Code 2.0.74
+if (Test-Path $settingsPath) {
+    try {
+        $settings = Get-Content $settingsPath -Raw | ConvertFrom-Json
+        if ($settings.env) {
+            # Export each environment variable from settings.json
+            $settings.env.PSObject.Properties | ForEach-Object {
+                [Environment]::SetEnvironmentVariable($_.Name, $_.Value, "Process")
+            }
+        }
+    } catch {
+        Write-Host "[WARN] Impossible de lire settings.json" -ForegroundColor Yellow
+    }
+}
+
+# Also set CLAUDE_CONFIG_DIR just in case future versions support it
+$env:CLAUDE_CONFIG_DIR = $claudyDir
 
 # Get the directory where this script is located
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -150,7 +171,7 @@ Write-Host "[OK] Wrapper Claudy cree" -ForegroundColor Green
 $claudyCmdPath = Join-Path $npmPrefix "claudy.cmd"
 $claudyCmdContent = @"
 @echo off
-set CLAUDE_CONFIG_DIR=%USERPROFILE%\.claudy
+title claudy
 pwsh -NoProfile -ExecutionPolicy Bypass -File "%~dp0claudy.ps1" %*
 "@
 $claudyCmdContent | Out-File -FilePath $claudyCmdPath -Encoding ascii -Force
