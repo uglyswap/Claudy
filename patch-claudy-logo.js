@@ -1,8 +1,12 @@
 /**
- * Patch Claude Code cli.js to show CLAUDY ASCII logo + AKHITHINK animation
- * Replaces the small Claude logo with full CLAUDY ASCII art
- * Colors: Yellow → Orange → Rose → Magenta gradient (from Claudy-Logo.psm1)
- * Also adds AKHITHINK detection with rainbow animation like ultrathink
+ * Patch Claude Code to create cli-claudy.js with CLAUDY branding
+ * IMPORTANT: Does NOT modify cli.js - creates a separate cli-claudy.js file
+ * This allows 'claude' command to remain unaffected while 'claudy' uses patched version
+ * 
+ * Features:
+ * - CLAUDY ASCII logo with gradient colors
+ * - AKHITHINK detection for rainbow animation
+ * - All "Claude Code" text replaced with "Claudy"
  */
 
 const fs = require('fs');
@@ -34,8 +38,14 @@ if (!cliPath) {
     process.exit(0);
 }
 
-console.log('[PATCH] Patching', cliPath);
+// Define path for the patched copy
+const cliDir = path.dirname(cliPath);
+const claudyCliPath = path.join(cliDir, 'cli-claudy.js');
 
+console.log('[PATCH] Creating patched copy:', claudyCliPath);
+console.log('[PATCH] Original cli.js remains untouched:', cliPath);
+
+// Read original content
 let content = fs.readFileSync(cliPath, 'utf8');
 let patchCount = 0;
 
@@ -62,24 +72,21 @@ if (content.includes('"Claude Code"')) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 // CLAUDY ASCII Logo lines with gradient colors (Yellow -> Orange -> Rose -> Magenta)
-// Colors from Claudy-Logo.psm1 fluoPalette: 226(yellow), 214(orange), 206(rose), 213(magenta)
 const logoLines = [
-    { text: ' ██████╗██╗      █████╗ ██╗   ██╗██████╗ ██╗   ██╗', color: '#ffff00' },  // Jaune vif (226)
-    { text: '██╔════╝██║     ██╔══██╗██║   ██║██╔══██╗╚██╗ ██╔╝', color: '#ffaf00' },  // Orange (214)
-    { text: '██║     ██║     ███████║██║   ██║██║  ██║ ╚████╔╝ ', color: '#ff8700' },  // Orange foncé (208)
-    { text: '██║     ██║     ██╔══██║██║   ██║██║  ██║  ╚██╔╝  ', color: '#ff5faf' },  // Rose (206)
-    { text: '╚██████╗███████╗██║  ██║╚██████╔╝██████╔╝   ██║   ', color: '#ff5fd7' },  // Rose-Magenta (207)
-    { text: ' ╚═════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝    ╚═╝   ', color: '#ff87ff' }   // Magenta (213)
+    { text: ' ██████╗██╗      █████╗ ██╗   ██╗██████╗ ██╗   ██╗', color: '#ffff00' },
+    { text: '██╔════╝██║     ██╔══██╗██║   ██║██╔══██╗╚██╗ ██╔╝', color: '#ffaf00' },
+    { text: '██║     ██║     ███████║██║   ██║██║  ██║ ╚████╔╝ ', color: '#ff8700' },
+    { text: '██║     ██║     ██╔══██║██║   ██║██║  ██║  ╚██╔╝  ', color: '#ff5faf' },
+    { text: '╚██████╗███████╗██║  ██║╚██████╔╝██████╔╝   ██║   ', color: '#ff5fd7' },
+    { text: ' ╚═════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝    ╚═╝   ', color: '#ff87ff' }
 ];
 
-// Signature line
 const signatureLine = '              ▓▒░ CLAUDY CLI ░▒▓';
 const tagline = '             ⚡ Agentic Coding ⚡';
 
-// Original logo structure pattern (React createElement calls) - version u2
+// Original logo structure pattern - version u2
 const oldLogoPattern1 = `u2.createElement(C,null,u2.createElement(C,{color:"text"}," *"),u2.createElement(C,{color:"ice_blue"}," ▐"),u2.createElement(C,{color:"ice_blue",backgroundColor:"clawd_background"},"▛███▜"),u2.createElement(C,{color:"ice_blue"},"▌"),u2.createElement(C,{color:"text"}," *")),u2.createElement(C,null,u2.createElement(C,{color:"text"},"*"),u2.createElement(C,{color:"ice_blue"}," ▝▜"),u2.createElement(C,{color:"ice_blue",backgroundColor:"clawd_background"},"█████"),u2.createElement(C,{color:"ice_blue"},"▛▘"),u2.createElement(C,{color:"text"}," *")),u2.createElement(C,null,u2.createElement(C,{color:"text"}," * "),u2.createElement(C,{color:"ice_blue"}," ▘▘ ▝▝","  "),u2.createElement(C,{color:"text"},"*"))`;
 
-// New logo structure - each line with gradient colors + signature
 const newLogoStructure1 = [
     ...logoLines.map(line => `u2.createElement(C,{color:"${line.color}"},"${line.text}")`),
     `u2.createElement(C,{color:"#00ffff"},"${signatureLine}")`,
@@ -95,7 +102,6 @@ if (content.includes(oldLogoPattern1)) {
 // Original logo structure pattern - version $B
 const oldLogoPattern2 = `$B.createElement(C,null,$B.createElement(C,{color:"text"}," *"),$B.createElement(C,{color:"ice_blue"}," ▐"),$B.createElement(C,{color:"ice_blue",backgroundColor:"clawd_background"},"▛███▜"),$B.createElement(C,{color:"ice_blue"},"▌"),$B.createElement(C,{color:"text"}," *")),$B.createElement(C,null,$B.createElement(C,{color:"text"},"*"),$B.createElement(C,{color:"ice_blue"}," ▝▜"),$B.createElement(C,{color:"ice_blue",backgroundColor:"clawd_background"},"█████"),$B.createElement(C,{color:"ice_blue"},"▛▘"),$B.createElement(C,{color:"text"}," *")),$B.createElement(C,null,$B.createElement(C,{color:"text"}," * "),$B.createElement(C,{color:"ice_blue"}," ▘▘ ▝▝","  "),$B.createElement(C,{color:"text"},"*"))`;
 
-// New logo structure with gradient colors + signature
 const newLogoStructure2 = [
     ...logoLines.map(line => `$B.createElement(C,{color:"${line.color}"},"${line.text}")`),
     `$B.createElement(C,{color:"#00ffff"},"${signatureLine}")`,
@@ -110,20 +116,13 @@ if (content.includes(oldLogoPattern2)) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PATCH 4: Add AKHITHINK detection to ultrathink function
-// The ultrathink detection function pyA checks for "ultrathink", "think ultra hard", etc.
-// We add "akhithink" to trigger the same rainbow animation effect
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Pattern: function pyA(A){let Q=A.toLowerCase();return Q==="ultrathink"||Q==="think ultra hard"||Q==="think ultrahard"}
-// We want to add: ||Q==="akhithink"
-
 const ultrathinkPatterns = [
-    // Pattern 1: exact match with specific function name
     {
         old: 'Q==="ultrathink"||Q==="think ultra hard"||Q==="think ultrahard"',
         new: 'Q==="ultrathink"||Q==="think ultra hard"||Q==="think ultrahard"||Q==="akhithink"'
     },
-    // Pattern 2: alternate ordering
     {
         old: 'Q==="think ultra hard"||Q==="think ultrahard"||Q==="ultrathink"',
         new: 'Q==="think ultra hard"||Q==="think ultrahard"||Q==="ultrathink"||Q==="akhithink"'
@@ -139,19 +138,14 @@ for (const pattern of ultrathinkPatterns) {
     }
 }
 
-// Also check for already patched (contains akhithink)
 if (content.includes('"akhithink"')) {
     console.log('  [INFO] AKHITHINK string detection already present');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PATCH 5: Replace ultrathink REGEX patterns to also match "akhithink"
-// There are 2 regex patterns that detect ultrathink for the rainbow animation:
-//   1. /\bultrathink\b/i  - used in cyA() function
-//   2. /\bultrathink\b/gi - stored in Yu5 variable
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Regex pattern 1: /\bultrathink\b/i -> /\b(ultrathink|akhithink)\b/i
 const regexPattern1Old = '/\\bultrathink\\b/i';
 const regexPattern1New = '/\\b(ultrathink|akhithink)\\b/i';
 
@@ -161,7 +155,6 @@ if (content.includes(regexPattern1Old) && !content.includes('akhithink)\\b/i')) 
     console.log('  [OK] Patched regex /\\bultrathink\\b/i → includes akhithink');
 }
 
-// Regex pattern 2: /\bultrathink\b/gi -> /\b(ultrathink|akhithink)\b/gi
 const regexPattern2Old = '/\\bultrathink\\b/gi';
 const regexPattern2New = '/\\b(ultrathink|akhithink)\\b/gi';
 
@@ -171,27 +164,17 @@ if (content.includes(regexPattern2Old) && !content.includes('akhithink)\\b/gi'))
     console.log('  [OK] Patched regex /\\bultrathink\\b/gi → includes akhithink');
 }
 
-// Check if regex already patched
 if (content.includes('akhithink)\\b/')) {
     console.log('  [INFO] AKHITHINK regex patterns already present');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// BACKUP & WRITE
+// WRITE PATCHED COPY (NOT modifying original!)
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Backup original
-const backupPath = cliPath + '.backup';
-if (!fs.existsSync(backupPath)) {
-    fs.copyFileSync(cliPath, backupPath);
-    console.log('[OK] Backup created');
-}
+// Write the patched version to cli-claudy.js
+fs.writeFileSync(claudyCliPath, content, 'utf8');
 
-// Write patched file
-fs.writeFileSync(cliPath, content, 'utf8');
-
-console.log(`[DONE] Applied ${patchCount} patches`);
-
-if (patchCount === 0) {
-    console.log('[INFO] No patterns found to patch. File may already be patched or structure changed.');
-}
+console.log(`[DONE] Created cli-claudy.js with ${patchCount} patches`);
+console.log('[INFO] Original cli.js is UNCHANGED - "claude" command works normally');
+console.log('[INFO] Claudy wrapper should use cli-claudy.js');
