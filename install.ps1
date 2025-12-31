@@ -2,7 +2,14 @@
 <#
 .SYNOPSIS
     Installs Claudy with GLM 4.7 (Z.AI), MCP servers, ASCII logo, and Frontend Master prompt.
-    Claudy is installed separately from Claude Code CLI - both can coexist.
+    Claudy is installed INDEPENDENTLY from Claude Code CLI - completely separate installations.
+
+.DESCRIPTION
+    Claudy has its own isolated installation in ~/.claudy/lib/
+    This means:
+    - Uninstalling Claude Code does NOT affect Claudy
+    - Updating Claude Code does NOT affect Claudy
+    - Both programs are 100% independent
 
 .EXAMPLE
     PowerShell / PowerShell Core:
@@ -22,6 +29,7 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "         CLAUDY INSTALLER              " -ForegroundColor Cyan
 Write-Host "       Powered by GLM 4.7 (Z.AI)       " -ForegroundColor Cyan
 Write-Host "   Claude Code v$CLAUDE_CODE_VERSION (frozen)    " -ForegroundColor Gray
+Write-Host "      INSTALLATION INDEPENDANTE        " -ForegroundColor Yellow
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -54,34 +62,70 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
 }
 Write-Host "[OK] npm" -ForegroundColor Green
 
-# Get npm global path
-$npmPrefix = npm config get prefix
-$npmRoot = npm root -g
+# ============================================
+# CREATE ISOLATED CLAUDY INSTALLATION
+# ============================================
+$claudyDir = Join-Path $env:USERPROFILE ".claudy"
+$claudyLibDir = Join-Path $claudyDir "lib"
+$claudyBinDir = Join-Path $claudyDir "bin"
+$claudyModulesDir = Join-Path $claudyDir "modules"
+
+# Create directories
+foreach ($dir in @($claudyDir, $claudyLibDir, $claudyBinDir, $claudyModulesDir)) {
+    if (-not (Test-Path $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    }
+}
 
 Write-Host ""
-Write-Host "Installation de Claude Code v$CLAUDE_CODE_VERSION..." -ForegroundColor Yellow
+Write-Host "Installation de Claude Code v$CLAUDE_CODE_VERSION dans ~/.claudy/lib/..." -ForegroundColor Yellow
+Write-Host "(Installation isolee, independante de npm global)" -ForegroundColor Gray
 
-# Install claude-code with pinned version
-npm install -g "@anthropic-ai/claude-code@$CLAUDE_CODE_VERSION" 2>&1 | Out-Null
+# Initialize package.json in lib directory if not exists
+$packageJsonPath = Join-Path $claudyLibDir "package.json"
+if (-not (Test-Path $packageJsonPath)) {
+    $packageJson = @{
+        name = "claudy-local"
+        version = "1.0.0"
+        description = "Claudy isolated installation"
+        private = $true
+    } | ConvertTo-Json
+    $packageJson | Out-File -FilePath $packageJsonPath -Encoding utf8 -Force
+}
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "[ERREUR] Echec de l'installation." -ForegroundColor Red
+# Install claude-code locally in ~/.claudy/lib/
+Push-Location $claudyLibDir
+try {
+    npm install "@anthropic-ai/claude-code@$CLAUDE_CODE_VERSION" 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "npm install failed"
+    }
+} catch {
+    Write-Host "[ERREUR] Echec de l'installation: $_" -ForegroundColor Red
+    Pop-Location
     exit 1
 }
-Write-Host "[OK] Claude Code v$CLAUDE_CODE_VERSION installe" -ForegroundColor Green
+Pop-Location
+
+Write-Host "[OK] Claude Code v$CLAUDE_CODE_VERSION installe dans ~/.claudy/lib/" -ForegroundColor Green
 
 # ============================================
 # CREATE CLI-CLAUDY.JS WITH CLAUDY BRANDING
 # ============================================
 Write-Host "Creation de cli-claudy.js avec branding Claudy..." -ForegroundColor Yellow
 
-# Download and run the patch script (creates cli-claudy.js, does NOT modify cli.js)
+# The CLI path in our isolated installation
+$cliSourcePath = Join-Path $claudyLibDir "node_modules\@anthropic-ai\claude-code\cli.js"
+$cliClaudyPath = Join-Path $claudyLibDir "node_modules\@anthropic-ai\claude-code\cli-claudy.js"
+
+# Download and run the patch script with the local path
 $patchScriptUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/patch-claudy-logo.js"
 $patchScriptPath = Join-Path $env:TEMP "patch-claudy-logo.js"
 
 try {
     Invoke-WebRequest -Uri $patchScriptUrl -OutFile $patchScriptPath -UseBasicParsing
-    $patchResult = & node $patchScriptPath 2>&1
+    # Pass the local installation path as argument
+    $patchResult = & node $patchScriptPath $claudyLibDir 2>&1
     Write-Host $patchResult
     Write-Host "[OK] cli-claudy.js cree avec logo CLAUDY" -ForegroundColor Magenta
 } catch {
@@ -93,22 +137,10 @@ finally {
     }
 }
 
-# Create .claudy directory (separate from .claude to allow coexistence)
-$claudyDir = Join-Path $env:USERPROFILE ".claudy"
-if (-not (Test-Path $claudyDir)) {
-    New-Item -ItemType Directory -Path $claudyDir -Force | Out-Null
-}
-
-# Create modules directory
-$modulesDir = Join-Path $claudyDir "modules"
-if (-not (Test-Path $modulesDir)) {
-    New-Item -ItemType Directory -Path $modulesDir -Force | Out-Null
-}
-
 # Download and install Claudy-Logo module (for wrapper animation)
 Write-Host "Installation du module Claudy-Logo..." -ForegroundColor Yellow
 $logoModuleUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/Claudy-Logo.psm1"
-$logoModulePath = Join-Path $modulesDir "Claudy-Logo.psm1"
+$logoModulePath = Join-Path $claudyModulesDir "Claudy-Logo.psm1"
 try {
     Invoke-WebRequest -Uri $logoModuleUrl -OutFile $logoModulePath -UseBasicParsing
     Write-Host "[OK] Module Claudy-Logo installe" -ForegroundColor Green
@@ -116,20 +148,23 @@ try {
     Write-Host "[WARN] Impossible de telecharger le module logo" -ForegroundColor Yellow
 }
 
-# Create claudy wrapper script that shows logo then launches cli-claudy.js
-# INCLUDES AUTO-REPAIR: If cli-claudy.js is missing, it re-downloads and runs the patch
-$claudyWrapperPath = Join-Path $npmPrefix "claudy.ps1"
+# ============================================
+# CREATE CLAUDY WRAPPER SCRIPTS
+# ============================================
+
+# Create the main PowerShell wrapper in ~/.claudy/bin/
+$claudyWrapperPath = Join-Path $claudyBinDir "claudy.ps1"
 $claudyWrapperContent = @'
 #!/usr/bin/env pwsh
-# Claudy - Wrapper for Claude Code with custom logo
-# Uses ~/.claudy/ for config (separate from Claude Code CLI's ~/.claude/)
-# IMPORTANT: Uses cli-claudy.js (patched) instead of cli.js (original)
-# AUTO-REPAIR: If cli-claudy.js is missing (e.g., after npm update), it recreates it
+# Claudy - Independent installation wrapper
+# Uses ~/.claudy/ for EVERYTHING (config + code)
+# Completely independent from Claude Code CLI
 
 # Set terminal title to "claudy"
 $Host.UI.RawUI.WindowTitle = "claudy"
 
 $claudyDir = Join-Path $env:USERPROFILE ".claudy"
+$claudyLibDir = Join-Path $claudyDir "lib"
 $modulePath = Join-Path $claudyDir "modules\Claudy-Logo.psm1"
 $settingsPath = Join-Path $claudyDir "settings.json"
 
@@ -154,13 +189,11 @@ if ($showLogo -and (Test-Path $modulePath)) {
     }
 }
 
-# CRITICAL FIX: Read settings.json and export env vars directly
-# CLAUDE_CONFIG_DIR is NOT respected by Claude Code 2.0.74
+# Read settings.json and export env vars
 if (Test-Path $settingsPath) {
     try {
         $settings = Get-Content $settingsPath -Raw | ConvertFrom-Json
         if ($settings.env) {
-            # Export each environment variable from settings.json
             $settings.env.PSObject.Properties | ForEach-Object {
                 [Environment]::SetEnvironmentVariable($_.Name, $_.Value, "Process")
             }
@@ -170,97 +203,78 @@ if (Test-Path $settingsPath) {
     }
 }
 
-# Also set CLAUDE_CONFIG_DIR just in case future versions support it
+# Set config dir
 $env:CLAUDE_CONFIG_DIR = $claudyDir
 
-# Get the directory where this script is located
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+# Path to our isolated cli-claudy.js
+$claudyExe = Join-Path $claudyLibDir "node_modules\@anthropic-ai\claude-code\cli-claudy.js"
 
-# Find cli-claudy.js (patched version with Claudy branding)
-$npmRoot = npm root -g 2>$null
-$claudyExe = $null
-
-# Try to find cli-claudy.js
-$possiblePaths = @(
-    (Join-Path $scriptDir "node_modules\@anthropic-ai\claude-code\cli-claudy.js"),
-    (Join-Path $npmRoot "@anthropic-ai\claude-code\cli-claudy.js")
-)
-
-foreach ($path in $possiblePaths) {
-    if ($path -and (Test-Path $path)) {
-        $claudyExe = $path
-        break
-    }
-}
-
-# AUTO-REPAIR: If cli-claudy.js doesn't exist, recreate it by running the patch
-if (-not $claudyExe -or -not (Test-Path $claudyExe)) {
+# AUTO-REPAIR: If cli-claudy.js doesn't exist, recreate it
+if (-not (Test-Path $claudyExe)) {
     Write-Host "[AUTO-REPAIR] cli-claudy.js manquant, re-creation en cours..." -ForegroundColor Yellow
     $patchUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/patch-claudy-logo.js"
     $patchPath = Join-Path $env:TEMP "patch-claudy-logo.js"
     try {
         Invoke-WebRequest -Uri $patchUrl -OutFile $patchPath -UseBasicParsing -ErrorAction Stop
-        $null = & node $patchPath 2>&1
+        $null = & node $patchPath $claudyLibDir 2>&1
         Remove-Item $patchPath -Force -ErrorAction SilentlyContinue
         Write-Host "[AUTO-REPAIR] cli-claudy.js recree avec succes" -ForegroundColor Green
-        
-        # Try to find it again after patch
-        foreach ($path in $possiblePaths) {
-            if ($path -and (Test-Path $path)) {
-                $claudyExe = $path
-                break
-            }
-        }
     } catch {
         Write-Host "[WARN] Impossible de recreer cli-claudy.js: $_" -ForegroundColor Yellow
     }
 }
 
-# Final fallback to cli.js if cli-claudy.js still doesn't exist
-if (-not $claudyExe -or -not (Test-Path $claudyExe)) {
-    $fallbackPaths = @(
-        (Join-Path $scriptDir "node_modules\@anthropic-ai\claude-code\cli.js"),
-        (Join-Path $npmRoot "@anthropic-ai\claude-code\cli.js")
-    )
-    foreach ($path in $fallbackPaths) {
-        if ($path -and (Test-Path $path)) {
-            $claudyExe = $path
-            break
-        }
-    }
+# Fallback to cli.js if cli-claudy.js still doesn't exist
+if (-not (Test-Path $claudyExe)) {
+    $claudyExe = Join-Path $claudyLibDir "node_modules\@anthropic-ai\claude-code\cli.js"
 }
 
-if ($claudyExe -and (Test-Path $claudyExe)) {
+if (Test-Path $claudyExe) {
     & node $claudyExe @filteredArgs
 } else {
-    Write-Host "[ERREUR] Claude Code introuvable" -ForegroundColor Red
+    Write-Host "[ERREUR] Claudy introuvable. Reinstallez avec:" -ForegroundColor Red
+    Write-Host "irm https://raw.githubusercontent.com/uglyswap/Claudy/main/install.ps1 | iex" -ForegroundColor Yellow
     exit 1
 }
 '@
 
 $claudyWrapperContent | Out-File -FilePath $claudyWrapperPath -Encoding utf8 -Force
-Write-Host "[OK] Wrapper Claudy cree (avec auto-reparation)" -ForegroundColor Green
 
-# Create batch file for cmd.exe compatibility
-# This works with both pwsh (PowerShell Core) and powershell (Windows PowerShell)
-$claudyCmdPath = Join-Path $npmPrefix "claudy.cmd"
+# Create batch file in ~/.claudy/bin/
+$claudyCmdPath = Join-Path $claudyBinDir "claudy.cmd"
 $claudyCmdContent = @"
 @echo off
 title claudy
+REM Claudy - Independent installation
 REM Try PowerShell Core (pwsh) first, fall back to Windows PowerShell
 where pwsh >nul 2>nul
 if %ERRORLEVEL% EQU 0 (
-    pwsh -NoProfile -ExecutionPolicy Bypass -File "%~dp0claudy.ps1" %*
+    pwsh -NoProfile -ExecutionPolicy Bypass -File "%USERPROFILE%\.claudy\bin\claudy.ps1" %*
 ) else (
-    powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0claudy.ps1" %*
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%USERPROFILE%\.claudy\bin\claudy.ps1" %*
 )
 "@
 $claudyCmdContent | Out-File -FilePath $claudyCmdPath -Encoding ascii -Force
-Write-Host "[OK] Commande 'claudy' creee (CMD + PowerShell)" -ForegroundColor Green
 
-# NOTE: We do NOT touch the 'claude' command
-# It uses the original cli.js (not patched)
-Write-Host "[OK] Commande 'claude' preservee (utilise cli.js original)" -ForegroundColor Green
+Write-Host "[OK] Wrappers Claudy crees dans ~/.claudy/bin/" -ForegroundColor Green
+
+# ============================================
+# ADD CLAUDY TO PATH
+# ============================================
+Write-Host "Configuration du PATH..." -ForegroundColor Yellow
+
+$userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+if ($userPath -notlike "*$claudyBinDir*") {
+    $newPath = "$claudyBinDir;$userPath"
+    [Environment]::SetEnvironmentVariable("PATH", $newPath, "User")
+    Write-Host "[OK] ~/.claudy/bin/ ajoute au PATH utilisateur" -ForegroundColor Green
+    Write-Host "[INFO] Redemarrez votre terminal pour que le PATH soit pris en compte" -ForegroundColor Yellow
+} else {
+    Write-Host "[OK] ~/.claudy/bin/ deja dans le PATH" -ForegroundColor Green
+}
+
+# Also add to current session
+$env:PATH = "$claudyBinDir;$env:PATH"
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
@@ -343,7 +357,7 @@ Write-Host "[OK] Mode bypass permissions active" -ForegroundColor Green
 Write-Host "[OK] Auto-updater desactive" -ForegroundColor Green
 Write-Host "[OK] 3 serveurs MCP configures" -ForegroundColor Green
 
-# Download CLAUDE.md from GitHub instead of hardcoding
+# Download CLAUDE.md from GitHub
 $claudeMdPath = Join-Path $claudyDir "CLAUDE.md"
 $claudeMdUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/CLAUDE.md"
 
@@ -361,35 +375,27 @@ try {
 Write-Host ""
 Write-Host "Installation des skills Claudy..." -ForegroundColor Yellow
 
-# Create skills directory in ~/.claudy/skills/ (Claudy's config directory)
-# Also install in ~/.claude/skills/ for compatibility
-$skillsDirs = @(
-    (Join-Path $claudyDir "skills"),
-    (Join-Path $env:USERPROFILE ".claude\skills")
-)
-
-foreach ($skillsDir in $skillsDirs) {
-    if (-not (Test-Path $skillsDir)) {
-        New-Item -ItemType Directory -Path $skillsDir -Force | Out-Null
-    }
-    
-    # Install /cle-api skill for changing Z.AI API key
-    $cleApiSkillDir = Join-Path $skillsDir "cle-api"
-    if (-not (Test-Path $cleApiSkillDir)) {
-        New-Item -ItemType Directory -Path $cleApiSkillDir -Force | Out-Null
-    }
-    
-    $cleApiSkillUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/skills/cle-api/SKILL.md"
-    $cleApiSkillPath = Join-Path $cleApiSkillDir "SKILL.md"
-    
-    try {
-        Invoke-WebRequest -Uri $cleApiSkillUrl -OutFile $cleApiSkillPath -UseBasicParsing
-    } catch {
-        # Silent fail for secondary location
-    }
+# Create skills directory in ~/.claudy/skills/
+$skillsDir = Join-Path $claudyDir "skills"
+if (-not (Test-Path $skillsDir)) {
+    New-Item -ItemType Directory -Path $skillsDir -Force | Out-Null
 }
 
-Write-Host "[OK] Skill /cle-api installe (changer la cle API)" -ForegroundColor Magenta
+# Install /cle-api skill for changing Z.AI API key
+$cleApiSkillDir = Join-Path $skillsDir "cle-api"
+if (-not (Test-Path $cleApiSkillDir)) {
+    New-Item -ItemType Directory -Path $cleApiSkillDir -Force | Out-Null
+}
+
+$cleApiSkillUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/skills/cle-api/SKILL.md"
+$cleApiSkillPath = Join-Path $cleApiSkillDir "SKILL.md"
+
+try {
+    Invoke-WebRequest -Uri $cleApiSkillUrl -OutFile $cleApiSkillPath -UseBasicParsing
+    Write-Host "[OK] Skill /cle-api installe" -ForegroundColor Magenta
+} catch {
+    Write-Host "[WARN] Impossible d'installer le skill /cle-api" -ForegroundColor Yellow
+}
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
@@ -411,11 +417,19 @@ if (-not $keyConfigured) {
     Write-Host "    $settingsPath" -ForegroundColor Cyan
     Write-Host ""
 }
-Write-Host "Coexistence avec Claude Code CLI :" -ForegroundColor White
-Write-Host "  - 'claudy' utilise cli-claudy.js (patche)" -ForegroundColor Gray
-Write-Host "  - 'claude' utilise cli.js (original, non modifie)" -ForegroundColor Gray
-Write-Host "  - Les deux peuvent fonctionner en parallele" -ForegroundColor Gray
-Write-Host "  - Mise a jour Claude Code? Claudy se repare automatiquement!" -ForegroundColor Gray
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "       INDEPENDANCE TOTALE             " -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Claudy est 100% independant de Claude Code :" -ForegroundColor White
+Write-Host "  - Installation isolee : ~/.claudy/lib/" -ForegroundColor Gray
+Write-Host "  - Configuration isolee : ~/.claudy/settings.json" -ForegroundColor Gray
+Write-Host "  - Binaires isoles : ~/.claudy/bin/" -ForegroundColor Gray
+Write-Host ""
+Write-Host "Actions sans impact sur Claudy :" -ForegroundColor Green
+Write-Host "  - Desinstaller Claude Code (npm uninstall -g)" -ForegroundColor Gray
+Write-Host "  - Mettre a jour Claude Code (npm update)" -ForegroundColor Gray
+Write-Host "  - Modifier ~/.claude/ (config Claude Code)" -ForegroundColor Gray
 Write-Host ""
 Write-Host "Fonctionnalites incluses :" -ForegroundColor White
 Write-Host "  - Logo CLAUDY avec degrade jaune-magenta" -ForegroundColor Magenta
@@ -424,12 +438,19 @@ Write-Host "  - Vision IA (images, videos, OCR)" -ForegroundColor Green
 Write-Host "  - Recherche web" -ForegroundColor Green
 Write-Host "  - Lecture de pages web" -ForegroundColor Green
 Write-Host "  - Mode sans permissions (pas de confirmations)" -ForegroundColor Green
-Write-Host "  - Version figee (pas de mises a jour auto)" -ForegroundColor Green
+Write-Host "  - Version figee $CLAUDE_CODE_VERSION (pas de mises a jour auto)" -ForegroundColor Green
 Write-Host "  - AKHITHINK: Deep reasoning mode" -ForegroundColor Magenta
 Write-Host "  - Identite Claudy Focan (Dikkenek)" -ForegroundColor Magenta
 Write-Host ""
 Write-Host "Commandes speciales :" -ForegroundColor White
 Write-Host "  - /cle-api <nouvelle_cle>  Changer la cle API Z.AI" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Version Claude Code: $CLAUDE_CODE_VERSION (frozen)" -ForegroundColor Gray
+Write-Host "Structure d'installation :" -ForegroundColor Gray
+Write-Host "  ~/.claudy/" -ForegroundColor DarkGray
+Write-Host "    ├── bin/           (claudy.cmd, claudy.ps1)" -ForegroundColor DarkGray
+Write-Host "    ├── lib/           (node_modules isolés)" -ForegroundColor DarkGray
+Write-Host "    ├── modules/       (Claudy-Logo.psm1)" -ForegroundColor DarkGray
+Write-Host "    ├── skills/        (skills Claudy)" -ForegroundColor DarkGray
+Write-Host "    ├── settings.json  (configuration)" -ForegroundColor DarkGray
+Write-Host "    └── CLAUDE.md      (system prompt)" -ForegroundColor DarkGray
 Write-Host ""
