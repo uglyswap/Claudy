@@ -67,11 +67,11 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "[OK] Claude Code v$CLAUDE_CODE_VERSION installe" -ForegroundColor Green
 
 # ============================================
-# PATCH CLI.JS WITH CLAUDY BRANDING & LOGO
+# CREATE CLI-CLAUDY.JS WITH CLAUDY BRANDING
 # ============================================
-Write-Host "Application du branding Claudy..." -ForegroundColor Yellow
+Write-Host "Creation de cli-claudy.js avec branding Claudy..." -ForegroundColor Yellow
 
-# Download and run the patch script
+# Download and run the patch script (creates cli-claudy.js, does NOT modify cli.js)
 $patchScriptUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/patch-claudy-logo.js"
 $patchScriptPath = Join-Path $env:TEMP "patch-claudy-logo.js"
 
@@ -79,9 +79,9 @@ try {
     Invoke-WebRequest -Uri $patchScriptUrl -OutFile $patchScriptPath -UseBasicParsing
     $patchResult = & node $patchScriptPath 2>&1
     Write-Host $patchResult
-    Write-Host "[OK] Logo CLAUDY avec degrade installe" -ForegroundColor Magenta
+    Write-Host "[OK] cli-claudy.js cree avec logo CLAUDY" -ForegroundColor Magenta
 } catch {
-    Write-Host "[WARN] Impossible d'appliquer le patch logo: $_" -ForegroundColor Yellow
+    Write-Host "[WARN] Impossible de creer cli-claudy.js: $_" -ForegroundColor Yellow
 }
 finally {
     if (Test-Path $patchScriptPath) {
@@ -112,13 +112,13 @@ try {
     Write-Host "[WARN] Impossible de telecharger le module logo" -ForegroundColor Yellow
 }
 
-# Create claudy wrapper script that shows logo then launches claude
+# Create claudy wrapper script that shows logo then launches cli-claudy.js
 $claudyWrapperPath = Join-Path $npmPrefix "claudy.ps1"
 $claudyWrapperContent = @'
 #!/usr/bin/env pwsh
 # Claudy - Wrapper for Claude Code with custom logo
 # Uses ~/.claudy/ for config (separate from Claude Code CLI's ~/.claude/)
-# IMPORTANT: Exports env vars directly because CLAUDE_CONFIG_DIR is not respected
+# IMPORTANT: Uses cli-claudy.js (patched) instead of cli.js (original)
 
 # Set terminal title to "claudy"
 $Host.UI.RawUI.WindowTitle = "claudy"
@@ -170,18 +170,30 @@ $env:CLAUDE_CONFIG_DIR = $claudyDir
 # Get the directory where this script is located
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-# Find and run the actual claude executable
-$claudeExe = Join-Path $scriptDir "node_modules\@anthropic-ai\claude-code\cli.js"
-if (-not (Test-Path $claudeExe)) {
+# Find and run cli-claudy.js (patched version with Claudy branding)
+# This is DIFFERENT from cli.js which is used by the 'claude' command
+$claudyExe = Join-Path $scriptDir "node_modules\@anthropic-ai\claude-code\cli-claudy.js"
+if (-not (Test-Path $claudyExe)) {
     # Try npm global node_modules
     $npmRoot = npm root -g 2>$null
     if ($npmRoot) {
-        $claudeExe = Join-Path $npmRoot "@anthropic-ai\claude-code\cli.js"
+        $claudyExe = Join-Path $npmRoot "@anthropic-ai\claude-code\cli-claudy.js"
     }
 }
 
-if (Test-Path $claudeExe) {
-    & node $claudeExe @filteredArgs
+# Fallback to cli.js if cli-claudy.js doesn't exist
+if (-not (Test-Path $claudyExe)) {
+    $claudyExe = Join-Path $scriptDir "node_modules\@anthropic-ai\claude-code\cli.js"
+    if (-not (Test-Path $claudyExe)) {
+        $npmRoot = npm root -g 2>$null
+        if ($npmRoot) {
+            $claudyExe = Join-Path $npmRoot "@anthropic-ai\claude-code\cli.js"
+        }
+    }
+}
+
+if (Test-Path $claudyExe) {
+    & node $claudyExe @filteredArgs
 } else {
     Write-Host "[ERREUR] Claude Code introuvable" -ForegroundColor Red
     exit 1
@@ -189,7 +201,7 @@ if (Test-Path $claudeExe) {
 '@
 
 $claudyWrapperContent | Out-File -FilePath $claudyWrapperPath -Encoding utf8 -Force
-Write-Host "[OK] Wrapper Claudy cree" -ForegroundColor Green
+Write-Host "[OK] Wrapper Claudy cree (utilise cli-claudy.js)" -ForegroundColor Green
 
 # Create batch file for cmd.exe compatibility
 $claudyCmdPath = Join-Path $npmPrefix "claudy.cmd"
@@ -201,9 +213,9 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File "%~dp0claudy.ps1" %*
 $claudyCmdContent | Out-File -FilePath $claudyCmdPath -Encoding ascii -Force
 Write-Host "[OK] Commande 'claudy' creee" -ForegroundColor Green
 
-# NOTE: We do NOT remove the 'claude' command anymore
-# This allows Claude Code CLI and Claudy to coexist
-Write-Host "[OK] Commande 'claude' preservee (coexistence avec Claude Code CLI)" -ForegroundColor Green
+# NOTE: We do NOT touch the 'claude' command
+# It uses the original cli.js (not patched)
+Write-Host "[OK] Commande 'claude' preservee (utilise cli.js original)" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
@@ -353,8 +365,8 @@ if (-not $keyConfigured) {
     Write-Host ""
 }
 Write-Host "Coexistence avec Claude Code CLI :" -ForegroundColor White
-Write-Host "  - 'claudy' utilise ~/.claudy/ (config Claudy)" -ForegroundColor Gray
-Write-Host "  - 'claude' utilise ~/.claude/ (config Claude Code CLI)" -ForegroundColor Gray
+Write-Host "  - 'claudy' utilise cli-claudy.js (patche)" -ForegroundColor Gray
+Write-Host "  - 'claude' utilise cli.js (original, non modifie)" -ForegroundColor Gray
 Write-Host "  - Les deux peuvent fonctionner en parallele" -ForegroundColor Gray
 Write-Host ""
 Write-Host "Fonctionnalites incluses :" -ForegroundColor White
