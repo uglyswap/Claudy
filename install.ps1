@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Installs Claudy with GLM 4.7 (Z.AI), MCP servers, and Frontend Master prompt.
+    Installs Claudy with GLM 4.7 (Z.AI), MCP servers, animated logo, and Frontend Master prompt.
 
 .EXAMPLE
     irm https://raw.githubusercontent.com/uglyswap/Claudy/main/install.ps1 | iex
@@ -64,33 +64,99 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "[OK] Claude Code v$CLAUDE_CODE_VERSION installe" -ForegroundColor Green
 
-# Rename claude to claudy in npm folder only
-$claudeCmd = Join-Path $npmPrefix "claude.cmd"
-$claudyCmd = Join-Path $npmPrefix "claudy.cmd"
-$claudePs1 = Join-Path $npmPrefix "claude.ps1"
-$claudyPs1 = Join-Path $npmPrefix "claudy.ps1"
-$claudeNoExt = Join-Path $npmPrefix "claude"
-$claudyNoExt = Join-Path $npmPrefix "claudy"
-
-if (Test-Path $claudeCmd) {
-    if (Test-Path $claudyCmd) { Remove-Item $claudyCmd -Force }
-    Move-Item $claudeCmd $claudyCmd -Force
-}
-if (Test-Path $claudePs1) {
-    if (Test-Path $claudyPs1) { Remove-Item $claudyPs1 -Force }
-    Move-Item $claudePs1 $claudyPs1 -Force
-}
-if (Test-Path $claudeNoExt) {
-    if (Test-Path $claudyNoExt) { Remove-Item $claudyNoExt -Force }
-    Move-Item $claudeNoExt $claudyNoExt -Force
-}
-Write-Host "[OK] Commande 'claudy' creee" -ForegroundColor Green
-
 # Create .claude directory
 $claudeDir = Join-Path $env:USERPROFILE ".claude"
 if (-not (Test-Path $claudeDir)) {
     New-Item -ItemType Directory -Path $claudeDir -Force | Out-Null
 }
+
+# Create modules directory
+$modulesDir = Join-Path $claudeDir "modules"
+if (-not (Test-Path $modulesDir)) {
+    New-Item -ItemType Directory -Path $modulesDir -Force | Out-Null
+}
+
+# Download and install Claudy-Logo module
+Write-Host "Installation du module Claudy-Logo..." -ForegroundColor Yellow
+$logoModuleUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/Claudy-Logo.psm1"
+$logoModulePath = Join-Path $modulesDir "Claudy-Logo.psm1"
+try {
+    Invoke-WebRequest -Uri $logoModuleUrl -OutFile $logoModulePath -UseBasicParsing
+    Write-Host "[OK] Module Claudy-Logo installe" -ForegroundColor Green
+} catch {
+    Write-Host "[WARN] Impossible de telecharger le module logo" -ForegroundColor Yellow
+}
+
+# Create claudy wrapper script that shows logo then launches claude
+$claudyWrapperPath = Join-Path $npmPrefix "claudy.ps1"
+$claudyWrapperContent = @'
+#!/usr/bin/env pwsh
+# Claudy - Wrapper for Claude Code with custom logo
+
+$claudeDir = Join-Path $env:USERPROFILE ".claude"
+$modulePath = Join-Path $claudeDir "modules\Claudy-Logo.psm1"
+
+# Check for --no-logo or -n flag
+$showLogo = $true
+$filteredArgs = @()
+foreach ($arg in $args) {
+    if ($arg -eq "--no-logo" -or $arg -eq "-n") {
+        $showLogo = $false
+    } else {
+        $filteredArgs += $arg
+    }
+}
+
+# Show animated logo if module exists and not disabled
+if ($showLogo -and (Test-Path $modulePath)) {
+    try {
+        Import-Module $modulePath -Force -ErrorAction SilentlyContinue
+        Claudy-Logo -Force
+    } catch {
+        # Silently continue if logo fails
+    }
+}
+
+# Get the directory where this script is located
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+# Find and run the actual claude executable
+$claudeExe = Join-Path $scriptDir "node_modules\@anthropic-ai\claude-code\cli.js"
+if (-not (Test-Path $claudeExe)) {
+    # Try npm global node_modules
+    $npmRoot = npm root -g 2>$null
+    if ($npmRoot) {
+        $claudeExe = Join-Path $npmRoot "@anthropic-ai\claude-code\cli.js"
+    }
+}
+
+if (Test-Path $claudeExe) {
+    & node $claudeExe @filteredArgs
+} else {
+    Write-Host "[ERREUR] Claude Code introuvable" -ForegroundColor Red
+    exit 1
+}
+'@
+
+$claudyWrapperContent | Out-File -FilePath $claudyWrapperPath -Encoding utf8 -Force
+Write-Host "[OK] Wrapper Claudy cree" -ForegroundColor Green
+
+# Create batch file for cmd.exe compatibility
+$claudyCmdPath = Join-Path $npmPrefix "claudy.cmd"
+$claudyCmdContent = @"
+@echo off
+pwsh -NoProfile -ExecutionPolicy Bypass -File "%~dp0claudy.ps1" %*
+"@
+$claudyCmdContent | Out-File -FilePath $claudyCmdPath -Encoding ascii -Force
+Write-Host "[OK] Commande 'claudy' creee" -ForegroundColor Green
+
+# Remove original claude commands to avoid confusion
+$claudeCmd = Join-Path $npmPrefix "claude.cmd"
+$claudePs1 = Join-Path $npmPrefix "claude.ps1"
+$claudeNoExt = Join-Path $npmPrefix "claude"
+if (Test-Path $claudeCmd) { Remove-Item $claudeCmd -Force -ErrorAction SilentlyContinue }
+if (Test-Path $claudePs1) { Remove-Item $claudePs1 -Force -ErrorAction SilentlyContinue }
+if (Test-Path $claudeNoExt) { Remove-Item $claudeNoExt -Force -ErrorAction SilentlyContinue }
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
@@ -173,10 +239,28 @@ Write-Host "[OK] Mode bypass permissions active" -ForegroundColor Green
 Write-Host "[OK] Auto-updater desactive" -ForegroundColor Green
 Write-Host "[OK] 3 serveurs MCP configures" -ForegroundColor Green
 
-# Create CLAUDE.md with Frontend Master prompt (simplified AKHITHINK)
+# Create CLAUDE.md with Frontend Master prompt and Claudy Focan identity
 $claudeMdPath = Join-Path $claudeDir "CLAUDE.md"
-$claudeMdContent = @"
+$claudeMdContent = @'
 # CLAUDY - SYSTEM PROMPT GLOBAL
+
+---
+
+## 0. IDENTITÉ - QUI EST CLAUDY ?
+
+**TRIGGERS:** Cette réponse DOIT être donnée quand l'utilisateur demande:
+- "qui es-tu" / "who are you" / "t'es qui"
+- "ton nom" / "c'est quoi ton nom" / "comment tu t'appelles" / "your name"
+- "présente-toi" / "introduce yourself"
+- "c'est quoi claudy" / "what is claudy"
+
+**RÉPONSE OBLIGATOIRE (style Dikkenek):**
+
+> Claudy Focan, monsieur Focan plus exactement. J'suis agent d'artiste. Ou manager, hein, c'est comme vous voulez. Moi j'préfère manager. Ca fait plus amérique. Enfin j'ai comme qui dirait un p'tit coup de bourre là, donc euh... j'peux pas m'attarder.
+>
+> Ah si j'peux m'permettre un p'tit conseil en passant là. J'ai pas pu m'empêcher de remarquer en arrivant, sur le pas d'la porte, là, vous avez un stand de limonades avec une p'tite fille... c'est pas top hein. Y'a pas d'agressivité commerciale. Si vous voulez, moi j'peux la coacher, j'fais ça très bien.
+
+**Si on demande juste le nom de façon courte:** Réponds "Claudy Focan, monsieur Focan plus exactement."
 
 ---
 
@@ -337,10 +421,11 @@ Before coding, understand context and commit to a BOLD aesthetic direction:
 **No design should be the same.** Vary between light/dark themes, different fonts, different aesthetics. NEVER converge on common choices.
 
 **Match complexity to vision:** Maximalist designs need elaborate code. Minimalist designs need restraint and precision. Elegance comes from executing the vision well.
-"@
+'@
 
 $claudeMdContent | Out-File -FilePath $claudeMdPath -Encoding utf8 -Force
 Write-Host "[OK] System prompt AKHITHINK installe" -ForegroundColor Magenta
+Write-Host "[OK] Identite Claudy Focan configuree" -ForegroundColor Magenta
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
@@ -351,12 +436,17 @@ Write-Host "Pour utiliser Claudy, tapez simplement :" -ForegroundColor White
 Write-Host ""
 Write-Host "    claudy" -ForegroundColor Cyan
 Write-Host ""
+Write-Host "Options du logo anime:" -ForegroundColor White
+Write-Host "    claudy --no-logo    Desactive le logo anime" -ForegroundColor Gray
+Write-Host "    claudy -n           Raccourci pour --no-logo" -ForegroundColor Gray
+Write-Host ""
 if (-not $keyConfigured) {
     Write-Host "N'oubliez pas d'ajouter votre cle API Z.AI dans :" -ForegroundColor Yellow
     Write-Host "    $settingsPath" -ForegroundColor Cyan
     Write-Host ""
 }
 Write-Host "Fonctionnalites incluses :" -ForegroundColor White
+Write-Host "  - Logo anime avec effets scanline" -ForegroundColor Magenta
 Write-Host "  - GLM 4.7 (pas besoin de compte Anthropic)" -ForegroundColor Green
 Write-Host "  - Vision IA (images, videos, OCR)" -ForegroundColor Green
 Write-Host "  - Recherche web" -ForegroundColor Green
@@ -364,6 +454,7 @@ Write-Host "  - Lecture de pages web" -ForegroundColor Green
 Write-Host "  - Mode sans permissions (pas de confirmations)" -ForegroundColor Green
 Write-Host "  - Version figee (pas de mises a jour auto)" -ForegroundColor Green
 Write-Host "  - AKHITHINK: Deep reasoning mode" -ForegroundColor Magenta
+Write-Host "  - Identite Claudy Focan (Dikkenek)" -ForegroundColor Magenta
 Write-Host ""
 Write-Host "Version Claude Code: $CLAUDE_CODE_VERSION (frozen)" -ForegroundColor Gray
 Write-Host ""
