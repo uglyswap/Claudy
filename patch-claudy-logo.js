@@ -3,6 +3,10 @@
  * IMPORTANT: Does NOT modify cli.js - creates a separate cli-claudy.js file
  * This allows 'claude' command to remain unaffected while 'claudy' uses patched version
  * 
+ * Usage:
+ *   node patch-claudy-logo.js                    # Uses npm global path (legacy)
+ *   node patch-claudy-logo.js ~/.claudy/lib      # Uses custom path (isolated install)
+ * 
  * Features:
  * - CLAUDY ASCII logo with gradient colors
  * - AKHITHINK detection for rainbow animation
@@ -11,31 +15,64 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
-// Get npm global path
-const npmPrefix = process.env.npm_config_prefix ||
-    (process.platform === 'win32'
-        ? path.join(process.env.APPDATA, 'npm')
-        : '/usr/local');
-
-// Try multiple possible locations for cli.js
-const possiblePaths = [
-    path.join(npmPrefix, 'node_modules', '@anthropic-ai', 'claude-code', 'cli.js'),
-    path.join(npmPrefix, 'lib', 'node_modules', '@anthropic-ai', 'claude-code', 'cli.js')
-];
+// Check if custom path is provided as argument
+const customLibPath = process.argv[2];
 
 let cliPath = null;
-for (const p of possiblePaths) {
-    if (fs.existsSync(p)) {
-        cliPath = p;
-        break;
-    }
-}
 
-if (!cliPath) {
-    console.log('[WARN] cli.js not found at expected locations');
-    possiblePaths.forEach(p => console.log('  Tried:', p));
-    process.exit(0);
+if (customLibPath) {
+    // ═══════════════════════════════════════════════════════════════════════════
+    // ISOLATED INSTALLATION MODE: Use custom path (~/.claudy/lib/)
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    // Expand ~ to home directory if needed
+    let libPath = customLibPath;
+    if (libPath.startsWith('~')) {
+        libPath = path.join(os.homedir(), libPath.slice(1));
+    }
+    
+    const customCliPath = path.join(libPath, 'node_modules', '@anthropic-ai', 'claude-code', 'cli.js');
+    
+    if (fs.existsSync(customCliPath)) {
+        cliPath = customCliPath;
+        console.log('[PATCH] Using isolated installation path:', libPath);
+    } else {
+        console.log('[WARN] cli.js not found at custom path:', customCliPath);
+        process.exit(0);
+    }
+} else {
+    // ═══════════════════════════════════════════════════════════════════════════
+    // LEGACY MODE: Search in npm global paths
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    // Get npm global path
+    const npmPrefix = process.env.npm_config_prefix ||
+        (process.platform === 'win32'
+            ? path.join(process.env.APPDATA, 'npm')
+            : '/usr/local');
+
+    // Try multiple possible locations for cli.js
+    const possiblePaths = [
+        path.join(npmPrefix, 'node_modules', '@anthropic-ai', 'claude-code', 'cli.js'),
+        path.join(npmPrefix, 'lib', 'node_modules', '@anthropic-ai', 'claude-code', 'cli.js')
+    ];
+
+    for (const p of possiblePaths) {
+        if (fs.existsSync(p)) {
+            cliPath = p;
+            break;
+        }
+    }
+
+    if (!cliPath) {
+        console.log('[WARN] cli.js not found at expected locations');
+        possiblePaths.forEach(p => console.log('  Tried:', p));
+        process.exit(0);
+    }
+    
+    console.log('[PATCH] Using npm global installation');
 }
 
 // Define path for the patched copy
