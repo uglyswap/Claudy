@@ -1,7 +1,8 @@
 /**
- * Patch Claude Code cli.js to show CLAUDY ASCII logo
+ * Patch Claude Code cli.js to show CLAUDY ASCII logo + AKHITHINK animation
  * Replaces the small Claude logo with full CLAUDY ASCII art
  * Colors: Yellow → Orange → Rose → Magenta gradient (from Claudy-Logo.psm1)
+ * Also adds AKHITHINK detection with rainbow animation like ultrathink
  */
 
 const fs = require('fs');
@@ -105,6 +106,42 @@ if (content.includes(oldLogoPattern2)) {
     content = content.replace(oldLogoPattern2, newLogoStructure2);
     patchCount++;
     console.log('  [OK] Replaced logo pattern 2 ($B.createElement) with Claudy gradient');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PATCH 4: Add AKHITHINK detection to ultrathink function
+// The ultrathink detection function pyA checks for "ultrathink", "think ultra hard", etc.
+// We add "akhithink" to trigger the same rainbow animation effect
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Pattern: function pyA(A){let Q=A.toLowerCase();return Q==="ultrathink"||Q==="think ultra hard"||Q==="think ultrahard"}
+// We want to add: ||Q==="akhithink"
+
+const ultrathinkPatterns = [
+    // Pattern 1: exact match with specific function name
+    {
+        old: 'Q==="ultrathink"||Q==="think ultra hard"||Q==="think ultrahard"',
+        new: 'Q==="ultrathink"||Q==="think ultra hard"||Q==="think ultrahard"||Q==="akhithink"'
+    },
+    // Pattern 2: alternate ordering
+    {
+        old: 'Q==="think ultra hard"||Q==="think ultrahard"||Q==="ultrathink"',
+        new: 'Q==="think ultra hard"||Q==="think ultrahard"||Q==="ultrathink"||Q==="akhithink"'
+    }
+];
+
+for (const pattern of ultrathinkPatterns) {
+    if (content.includes(pattern.old) && !content.includes('"akhithink"')) {
+        content = content.replace(pattern.old, pattern.new);
+        patchCount++;
+        console.log('  [OK] Added "akhithink" to ultrathink detection (rainbow animation enabled)');
+        break;
+    }
+}
+
+// Also check for already patched (contains akhithink)
+if (content.includes('"akhithink"')) {
+    console.log('  [INFO] AKHITHINK detection already present');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

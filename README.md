@@ -1,6 +1,6 @@
 # Claudy
 
-Un assistant de code IA dans votre terminal, propulse par **GLM 4.7** (Z.AI).
+Un assistant de code IA dans votre terminal, propulsé par **GLM 4.7** (Z.AI).
 
 **Pas besoin de compte Anthropic** - Claudy utilise l'API Z.AI.
 
@@ -10,34 +10,82 @@ Un assistant de code IA dans votre terminal, propulse par **GLM 4.7** (Z.AI).
 
 ---
 
-## Fonctionnalites
+## Fonctionnalités
 
-- **GLM 4.7** : Modele d'IA puissant pour le code
-- **Vision IA** : Analyse d'images, videos, OCR, diagrammes
-- **Recherche web** : Recherche sur internet en temps reel
+- **GLM 4.7** : Modèle d'IA puissant pour le code
+- **Vision IA** : Analyse d'images, vidéos, OCR, diagrammes
+- **Recherche web** : Recherche sur internet en temps réel
 - **Lecture web** : Extraction du contenu de pages web
 - **Mode sans permissions** : Pas de confirmations, Claudy travaille sans interruption
+- **AKHITHINK** : Mode de réflexion profonde avec animation rainbow 🌈
 
-Tout est pre-configure. Une seule cle API pour tout.
+Tout est pré-configuré. Une seule clé API pour tout.
+
+---
+
+## ⚡ Commande AKHITHINK
+
+**AKHITHINK** est la commande signature de Claudy pour activer le mode réflexion profonde.
+
+### Comment l'utiliser
+
+Tapez simplement `akhithink` suivi de votre question :
+
+```
+akhithink comment optimiser cette architecture ?
+akhithink analyse les failles de sécurité de ce code
+akhithink conçois un système de cache distribué
+```
+
+### Ce qui se passe
+
+1. **🌈 Animation Rainbow** : Le mot "AKHITHINK" s'affiche avec une animation arc-en-ciel (comme `ultrathink`)
+2. **🧠 Réflexion Profonde** : Claudy active son mode d'analyse exhaustive
+3. **📊 Analyse Multi-Dimensionnelle** :
+   - Psychologique : sentiment utilisateur, charge cognitive
+   - Technique : performance, complexité, coûts de rendu
+   - Accessibilité : WCAG AAA, lecteurs d'écran
+   - Scalabilité : maintenance long-terme, modularité
+   - Sécurité : XSS, CSRF, injections, validation
+
+### Format de Réponse AKHITHINK
+
+```
+⚡ AKHITHINK MODE ACTIVATED ⚡
+
+1. Deep Reasoning Chain (analyse architecturale détaillée)
+2. Edge Case Analysis (ce qui peut mal tourner)
+3. Alternative Approaches (options considérées et rejetées)
+4. The Code (solution optimisée et production-ready)
+```
+
+### Différence avec une question normale
+
+| Mode Normal | Mode AKHITHINK |
+|-------------|----------------|
+| Réponse concise | Analyse exhaustive |
+| Code direct | Justification profonde |
+| 1-2 alternatives | Toutes les options explorées |
+| Focus solution | Focus compréhension |
 
 ---
 
 ## Installation
 
-### Etape 1 : Installer Node.js (si pas deja fait)
+### Étape 1 : Installer Node.js (si pas déjà fait)
 
-Telechargez et installez Node.js depuis : **https://nodejs.org/**
+Téléchargez et installez Node.js depuis : **https://nodejs.org/**
 
-Choisissez la version **LTS** (recommandee).
+Choisissez la version **LTS** (recommandée).
 
-### Etape 2 : Obtenir une cle API Z.AI
+### Étape 2 : Obtenir une clé API Z.AI
 
 1. Allez sur **https://open.z.ai/**
-2. Creez un compte ou connectez-vous
-3. Allez dans la gestion des cles API
-4. Creez une nouvelle cle et copiez-la
+2. Créez un compte ou connectez-vous
+3. Allez dans la gestion des clés API
+4. Créez une nouvelle clé et copiez-la
 
-### Etape 3 : Installer Claudy
+### Étape 3 : Installer Claudy
 
 **Windows** - Ouvrez PowerShell et collez :
 ```powershell
@@ -49,7 +97,7 @@ irm https://raw.githubusercontent.com/uglyswap/Claudy/main/install.ps1 | iex
 curl -fsSL https://raw.githubusercontent.com/uglyswap/Claudy/main/install.sh | bash
 ```
 
-L'installateur vous demandera votre cle API Z.AI.
+L'installateur vous demandera votre clé API Z.AI.
 
 ---
 
@@ -67,7 +115,7 @@ C'est tout !
 
 ## Coexistence avec Claude Code CLI
 
-Claudy est **completement isole** de Claude Code CLI officiel :
+Claudy est **complètement isolé** de Claude Code CLI officiel :
 
 | | Claudy | Claude Code CLI |
 |---|--------|----------------|
@@ -75,40 +123,40 @@ Claudy est **completement isole** de Claude Code CLI officiel :
 | **Config** | `~/.claudy/` | `~/.claude/` |
 | **API** | Z.AI (GLM 4.7) | Anthropic |
 
-Vous pouvez installer et utiliser les deux en parallele sans aucun conflit.
+Vous pouvez installer et utiliser les deux en parallèle sans aucun conflit.
 
 ---
 
 ## Serveurs MCP inclus
 
-Ces serveurs sont automatiquement configures pendant l'installation :
+Ces serveurs sont automatiquement configurés pendant l'installation :
 
 | Serveur | Fonction |
 |---------|----------|
-| **zai-vision** | Analyse d'images, videos, OCR, interpretation de diagrammes |
-| **web-search-prime** | Recherche web en temps reel |
+| **zai-vision** | Analyse d'images, vidéos, OCR, interprétation de diagrammes |
+| **web-search-prime** | Recherche web en temps réel |
 | **web-reader** | Lecture et extraction de contenu de pages web |
 
-Tous utilisent votre cle API Z.AI. Rien a configurer.
+Tous utilisent votre clé API Z.AI. Rien à configurer.
 
 ---
 
 ## Configuration
 
-La configuration de Claudy est stockee dans `~/.claudy/settings.json` :
+La configuration de Claudy est stockée dans `~/.claudy/settings.json` :
 
 - **Windows** : `C:\Users\VotreNom\.claudy\settings.json`
 - **Mac/Linux** : `~/.claudy/settings.json`
 
-### Modifier la cle API
+### Modifier la clé API
 
-Editez le fichier et remplacez toutes les occurrences de votre ancienne cle par la nouvelle.
+Éditez le fichier et remplacez toutes les occurrences de votre ancienne clé par la nouvelle.
 
 ### Mode permissions
 
-Par defaut, Claudy fonctionne en mode **bypass permissions** : il ne demande pas de confirmation pour les operations sur les fichiers ou les commandes bash. C'est le mode recommande pour une utilisation fluide.
+Par défaut, Claudy fonctionne en mode **bypass permissions** : il ne demande pas de confirmation pour les opérations sur les fichiers ou les commandes bash. C'est le mode recommandé pour une utilisation fluide.
 
-Pour reactiver les confirmations, modifiez `~/.claudy/settings.json` :
+Pour réactiver les confirmations, modifiez `~/.claudy/settings.json` :
 ```json
 {
   "permissionMode": "default",
@@ -122,24 +170,24 @@ Pour reactiver les confirmations, modifiez `~/.claudy/settings.json` :
 
 ### Pourquoi "ANTHROPIC" dans les variables si on utilise Z.AI ?
 
-Claude Code utilise ces noms de variables en interne. En changeant `ANTHROPIC_BASE_URL` vers Z.AI, toutes les requetes sont redirigees vers GLM 4.7. Pas besoin de compte Anthropic.
+Claude Code utilise ces noms de variables en interne. En changeant `ANTHROPIC_BASE_URL` vers Z.AI, toutes les requêtes sont redirigées vers GLM 4.7. Pas besoin de compte Anthropic.
 
-### J'ai deja Claude Code CLI installe, ca pose probleme ?
+### J'ai déjà Claude Code CLI installé, ça pose problème ?
 
-**Non.** Claudy utilise un dossier de configuration separe (`~/.claudy/`) et une commande differente (`claudy`). Les deux peuvent coexister sans conflit :
+**Non.** Claudy utilise un dossier de configuration séparé (`~/.claudy/`) et une commande différente (`claudy`). Les deux peuvent coexister sans conflit :
 - `claude` → Claude Code CLI officiel (utilise `~/.claude/`)
 - `claudy` → Claudy avec GLM 4.7 (utilise `~/.claudy/`)
 
-### Comment desinstaller Claudy ?
+### Comment désinstaller Claudy ?
 
-**Etape 1** - Supprimer la commande claudy :
+**Étape 1** - Supprimer la commande claudy :
 ```bash
-# Trouver ou est installe claudy
+# Trouver où est installé claudy
 npm root -g
 # Supprimer les fichiers claudy dans le dossier bin npm
 ```
 
-**Etape 2** - Supprimer le dossier de configuration :
+**Étape 2** - Supprimer le dossier de configuration :
 ```bash
 # Mac/Linux
 rm -rf ~/.claudy
@@ -148,13 +196,13 @@ rm -rf ~/.claudy
 Remove-Item -Recurse -Force $env:USERPROFILE\.claudy
 ```
 
-**Note** : Cela ne desinstalle PAS Claude Code CLI ni n'affecte sa configuration dans `~/.claude/`.
+**Note** : Cela ne désinstalle PAS Claude Code CLI ni n'affecte sa configuration dans `~/.claude/`.
 
-### Comment desinstaller completement (Claudy + Claude Code) ?
+### Comment désinstaller complètement (Claudy + Claude Code) ?
 
 Si vous voulez tout supprimer :
 ```bash
-# Desinstaller le package npm
+# Désinstaller le package npm
 npm uninstall -g @anthropic-ai/claude-code
 
 # Supprimer les configurations
@@ -166,6 +214,6 @@ rm -rf ~/.claude    # Config Claude Code CLI (si vous l'utilisez aussi)
 
 ## En savoir plus
 
-- **GLM 4.7** : Modele d'IA developpe par Zhipu AI
+- **GLM 4.7** : Modèle d'IA développé par Zhipu AI
 - **Z.AI** : Plateforme d'API pour GLM - https://open.z.ai/
-- **Claude Code** : Outil de base developpe par Anthropic
+- **Claude Code** : Outil de base développé par Anthropic
