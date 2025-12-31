@@ -113,6 +113,7 @@ cat > "$CLAUDY_PATH" << 'WRAPPER'
 # Claudy - Wrapper for Claude Code with custom animated logo
 # Uses ~/.claudy/ for config (separate from Claude Code CLI's ~/.claude/)
 # IMPORTANT: Exports env vars directly because CLAUDE_CONFIG_DIR is not respected
+# IMPORTANT: Uses cli-claudy.js (patched) instead of cli.js to avoid affecting 'claude' command
 
 # Set terminal title to "claudy"
 echo -ne "\033]0;claudy\007"
@@ -176,23 +177,35 @@ fi
 # Also set CLAUDE_CONFIG_DIR just in case future versions support it
 export CLAUDE_CONFIG_DIR="$HOME/.claudy"
 
-# Find and run the actual claude
+# Find and run cli-claudy.js (patched version with Claudy branding)
 NPM_PREFIX=$(npm config get prefix 2>/dev/null)
-CLAUDE_BIN="$NPM_PREFIX/lib/node_modules/@anthropic-ai/claude-code/cli.js"
+CLAUDY_BIN="$NPM_PREFIX/lib/node_modules/@anthropic-ai/claude-code/cli-claudy.js"
 
+# Try cli-claudy.js first (patched version with Claudy branding)
+if [ -f "$CLAUDY_BIN" ]; then
+    exec node "$CLAUDY_BIN" "${ARGS[@]}"
+fi
+
+# Fallback: try npm root path for cli-claudy.js
+NPM_ROOT=$(npm root -g 2>/dev/null)
+CLAUDY_BIN="$NPM_ROOT/@anthropic-ai/claude-code/cli-claudy.js"
+if [ -f "$CLAUDY_BIN" ]; then
+    exec node "$CLAUDY_BIN" "${ARGS[@]}"
+fi
+
+# Final fallback: use original cli.js (if patch wasn't applied)
+CLAUDE_BIN="$NPM_PREFIX/lib/node_modules/@anthropic-ai/claude-code/cli.js"
 if [ -f "$CLAUDE_BIN" ]; then
     exec node "$CLAUDE_BIN" "${ARGS[@]}"
-else
-    # Fallback: try to find it via npm root
-    NPM_ROOT=$(npm root -g 2>/dev/null)
-    CLAUDE_BIN="$NPM_ROOT/@anthropic-ai/claude-code/cli.js"
-    if [ -f "$CLAUDE_BIN" ]; then
-        exec node "$CLAUDE_BIN" "${ARGS[@]}"
-    else
-        echo -e "\033[0;31m[ERREUR] Claude Code introuvable\033[0m"
-        exit 1
-    fi
 fi
+
+CLAUDE_BIN="$NPM_ROOT/@anthropic-ai/claude-code/cli.js"
+if [ -f "$CLAUDE_BIN" ]; then
+    exec node "$CLAUDE_BIN" "${ARGS[@]}"
+fi
+
+echo -e "\033[0;31m[ERREUR] Claude Code introuvable\033[0m"
+exit 1
 WRAPPER
 
 chmod +x "$CLAUDY_PATH"
@@ -344,8 +357,8 @@ if [ "$KEY_CONFIGURED" = false ]; then
     echo ""
 fi
 echo -e "${WHITE}Coexistence avec Claude Code CLI :${NC}"
-echo -e "${GRAY}  - 'claudy' utilise ~/.claudy/ (config Claudy)${NC}"
-echo -e "${GRAY}  - 'claude' utilise ~/.claude/ (config Claude Code CLI)${NC}"
+echo -e "${GRAY}  - 'claudy' utilise ~/.claudy/ (config Claudy) + cli-claudy.js${NC}"
+echo -e "${GRAY}  - 'claude' utilise ~/.claude/ (config Claude Code CLI) + cli.js${NC}"
 echo -e "${GRAY}  - Les deux peuvent fonctionner en parallele${NC}"
 echo ""
 echo -e "${WHITE}Fonctionnalites incluses :${NC}"
