@@ -9,10 +9,14 @@
 
 $ErrorActionPreference = "Stop"
 
+# Version figee pour eviter les breaking changes d'Anthropic
+$CLAUDE_CODE_VERSION = "2.0.74"
+
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "         CLAUDY INSTALLER              " -ForegroundColor Cyan
 Write-Host "       Powered by GLM 4.7 (Z.AI)       " -ForegroundColor Cyan
+Write-Host "   Claude Code v$CLAUDE_CODE_VERSION (frozen)    " -ForegroundColor Gray
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -49,16 +53,16 @@ Write-Host "[OK] npm" -ForegroundColor Green
 $npmPrefix = npm config get prefix
 
 Write-Host ""
-Write-Host "Installation de Claude Code..." -ForegroundColor Yellow
+Write-Host "Installation de Claude Code v$CLAUDE_CODE_VERSION..." -ForegroundColor Yellow
 
-# Install claude-code
-npm install -g @anthropic-ai/claude-code 2>&1 | Out-Null
+# Install claude-code with pinned version
+npm install -g "@anthropic-ai/claude-code@$CLAUDE_CODE_VERSION" 2>&1 | Out-Null
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[ERREUR] Echec de l'installation." -ForegroundColor Red
     exit 1
 }
-Write-Host "[OK] Claude Code installe" -ForegroundColor Green
+Write-Host "[OK] Claude Code v$CLAUDE_CODE_VERSION installe" -ForegroundColor Green
 
 # Rename claude to claudy in npm folder only
 $claudeCmd = Join-Path $npmPrefix "claude.cmd"
@@ -132,7 +136,8 @@ $settingsContent = @"
     "API_TIMEOUT_MS": "3000000",
     "ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-4.7",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-4.7",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-4.7"
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-4.7",
+    "DISABLE_AUTOUPDATER": "1"
   },
   "mcpServers": {
     "zai-vision": {
@@ -165,6 +170,7 @@ $settingsContent = @"
 $settingsContent | Out-File -FilePath $settingsPath -Encoding utf8 -Force
 Write-Host "[OK] Configuration GLM 4.7 creee" -ForegroundColor Green
 Write-Host "[OK] Mode bypass permissions active" -ForegroundColor Green
+Write-Host "[OK] Auto-updater desactive" -ForegroundColor Green
 Write-Host "[OK] 3 serveurs MCP configures" -ForegroundColor Green
 
 # Create CLAUDE.md with Frontend Master prompt (simplified AKHITHINK)
@@ -356,5 +362,8 @@ Write-Host "  - Vision IA (images, videos, OCR)" -ForegroundColor Green
 Write-Host "  - Recherche web" -ForegroundColor Green
 Write-Host "  - Lecture de pages web" -ForegroundColor Green
 Write-Host "  - Mode sans permissions (pas de confirmations)" -ForegroundColor Green
+Write-Host "  - Version figee (pas de mises a jour auto)" -ForegroundColor Green
 Write-Host "  - AKHITHINK: Deep reasoning mode" -ForegroundColor Magenta
+Write-Host ""
+Write-Host "Version Claude Code: $CLAUDE_CODE_VERSION (frozen)" -ForegroundColor Gray
 Write-Host ""

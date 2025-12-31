@@ -9,6 +9,9 @@
 
 set -e
 
+# Version figee pour eviter les breaking changes d'Anthropic
+CLAUDE_CODE_VERSION="2.0.74"
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -23,6 +26,7 @@ echo ""
 echo -e "${CYAN}========================================${NC}"
 echo -e "${CYAN}         CLAUDY INSTALLER              ${NC}"
 echo -e "${CYAN}       Powered by GLM 4.7 (Z.AI)       ${NC}"
+echo -e "${GRAY}   Claude Code v${CLAUDE_CODE_VERSION} (frozen)    ${NC}"
 echo -e "${CYAN}========================================${NC}"
 echo ""
 
@@ -59,16 +63,16 @@ NPM_PREFIX=$(npm config get prefix)
 NPM_BIN="$NPM_PREFIX/bin"
 
 echo ""
-echo -e "${YELLOW}Installation de Claude Code...${NC}"
+echo -e "${YELLOW}Installation de Claude Code v${CLAUDE_CODE_VERSION}...${NC}"
 
-# Install claude-code
-npm install -g @anthropic-ai/claude-code > /dev/null 2>&1
+# Install claude-code with pinned version
+npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" > /dev/null 2>&1
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}[ERREUR] Echec de l'installation.${NC}"
     exit 1
 fi
-echo -e "${GREEN}[OK] Claude Code installe${NC}"
+echo -e "${GREEN}[OK] Claude Code v${CLAUDE_CODE_VERSION} installe${NC}"
 
 # Rename claude to claudy
 CLAUDE_PATH="$NPM_BIN/claude"
@@ -113,7 +117,7 @@ if [ -z "$API_KEY" ]; then
     echo -e "${CYAN}       $SETTINGS_PATH${NC}"
 fi
 
-# Create settings.json with GLM config, MCP servers, and bypass permissions
+# Create settings.json with GLM config, MCP servers, bypass permissions, and disabled auto-updater
 cat > "$SETTINGS_PATH" << EOF
 {
   "permissionMode": "bypassPermissions",
@@ -129,7 +133,8 @@ cat > "$SETTINGS_PATH" << EOF
     "API_TIMEOUT_MS": "3000000",
     "ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-4.7",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-4.7",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-4.7"
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-4.7",
+    "DISABLE_AUTOUPDATER": "1"
   },
   "mcpServers": {
     "zai-vision": {
@@ -161,6 +166,7 @@ EOF
 
 echo -e "${GREEN}[OK] Configuration GLM 4.7 creee${NC}"
 echo -e "${GREEN}[OK] Mode bypass permissions active${NC}"
+echo -e "${GREEN}[OK] Auto-updater desactive${NC}"
 echo -e "${GREEN}[OK] 3 serveurs MCP configures${NC}"
 
 # Create CLAUDE.md with simplified AKHITHINK prompt
@@ -351,5 +357,8 @@ echo -e "${GREEN}  - Vision IA (images, videos, OCR)${NC}"
 echo -e "${GREEN}  - Recherche web${NC}"
 echo -e "${GREEN}  - Lecture de pages web${NC}"
 echo -e "${GREEN}  - Mode sans permissions (pas de confirmations)${NC}"
+echo -e "${GREEN}  - Version figee (pas de mises a jour auto)${NC}"
 echo -e "${MAGENTA}  - AKHITHINK: Deep reasoning mode${NC}"
+echo ""
+echo -e "${GRAY}Version Claude Code: ${CLAUDE_CODE_VERSION} (frozen)${NC}"
 echo ""
