@@ -11,6 +11,7 @@
  * - CLAUDY ASCII logo with gradient colors
  * - AKHITHINK detection for rainbow animation
  * - All "Claude Code" text replaced with "Claudy"
+ * - All config paths changed from ~/.claude/ to ~/.claudy/
  * - Skills loaded from ~/.claudy/skills/ (not ~/.claude/skills/)
  */
 
@@ -222,6 +223,19 @@ if (skillsOccurrences > 0) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// PATCH 7: Replace ".claude" config directory with ".claudy"
+// This ensures ALL config paths use ~/.claudy/ instead of ~/.claude/
+// Covers: settings, skills discovery, agents, hooks, etc.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const configDirOccurrences = (content.match(/\"\.claude\"/g) || []).length;
+if (configDirOccurrences > 0) {
+    content = content.split('".claude"').join('".claudy"');
+    patchCount++;
+    console.log(`  [OK] Replaced ${configDirOccurrences}x ".claude" → ".claudy" (config paths)`);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // WRITE PATCHED COPY (NOT modifying original!)
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -231,4 +245,5 @@ fs.writeFileSync(claudyCliPath, content, 'utf8');
 console.log(`[DONE] Created cli-claudy.js with ${patchCount} patches`);
 console.log('[INFO] Original cli.js is UNCHANGED - "claude" command works normally');
 console.log('[INFO] Claudy wrapper should use cli-claudy.js');
+console.log('[INFO] All config now uses ~/.claudy/ instead of ~/.claude/');
 console.log('[INFO] User skills should be placed in ~/.claudy/skills/<skill-name>/SKILL.md');
