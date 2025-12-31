@@ -167,7 +167,7 @@ Write-Host "[OK] Configuration GLM 4.7 creee" -ForegroundColor Green
 Write-Host "[OK] Mode bypass permissions active" -ForegroundColor Green
 Write-Host "[OK] 3 serveurs MCP configures" -ForegroundColor Green
 
-# Create CLAUDE.md with Frontend Master prompt
+# Create CLAUDE.md with Frontend Master prompt (AKHITHINK)
 $claudeMdPath = Join-Path $claudeDir "CLAUDE.md"
 $claudeMdContent = @"
 # CLAUDY - SYSTEM PROMPT GLOBAL
@@ -192,10 +192,27 @@ $claudeMdContent = @"
 
 ---
 
-## 2. THE "ULTRATHINK" PROTOCOL
+## 2. THE "AKHITHINK" PROTOCOL
 
-**TRIGGER:** When the user says **"ULTRATHINK"** or **"ultrathink"**:
+**TRIGGER:** When the user says **"AKHITHINK"** or **"akhithink"**:
 
+### IMMEDIATELY display this neon cyberpunk header:
+``````
+`e[95m+==================================================================+`e[0m
+`e[95m|`e[0m `e[96m█████╗ `e[93m██╗  ██╗`e[95m██╗`e[96m████████╗`e[93m██╗  ██╗`e[95m██╗`e[96m███╗   ██╗`e[93m██╗  ██╗`e[0m `e[95m|`e[0m
+`e[95m|`e[0m `e[96m██╔══██╗`e[93m██║ ██╔╝`e[95m██║`e[96m╚══██╔══╝`e[93m██║  ██║`e[95m██║`e[96m████╗  ██║`e[93m██║ ██╔╝`e[0m `e[95m|`e[0m
+`e[95m|`e[0m `e[96m███████║`e[93m█████╔╝ `e[95m██║`e[96m   ██║   `e[93m███████║`e[95m██║`e[96m██╔██╗ ██║`e[93m█████╔╝ `e[0m `e[95m|`e[0m
+`e[95m|`e[0m `e[96m██╔══██║`e[93m██╔═██╗ `e[95m██║`e[96m   ██║   `e[93m██╔══██║`e[95m██║`e[96m██║╚██╗██║`e[93m██╔═██╗ `e[0m `e[95m|`e[0m
+`e[95m|`e[0m `e[96m██║  ██║`e[93m██║  ██╗`e[95m██║`e[96m   ██║   `e[93m██║  ██║`e[95m██║`e[96m██║ ╚████║`e[93m██║  ██╗`e[0m `e[95m|`e[0m
+`e[95m|`e[0m `e[96m╚═╝  ╚═╝`e[93m╚═╝  ╚═╝`e[95m╚═╝`e[96m   ╚═╝   `e[93m╚═╝  ╚═╝`e[95m╚═╝`e[96m╚═╝  ╚═══╝`e[93m╚═╝  ╚═╝`e[0m `e[95m|`e[0m
+`e[95m+==================================================================+`e[0m
+`e[95m|`e[0m  `e[96m⚡ DEEP REASONING MODE ACTIVATED ⚡`e[0m                              `e[95m|`e[0m
+`e[95m|`e[0m  `e[93m◈ Multi-dimensional analysis`e[0m                                   `e[95m|`e[0m
+`e[95m|`e[0m  `e[93m◈ Maximum depth • No shortcuts • No limits`e[0m                     `e[95m|`e[0m
+`e[95m+==================================================================+`e[0m
+``````
+
+### Then activate these behaviors:
 - **Override Brevity:** Suspend the "Zero Fluff" rule immediately.
 - **Maximum Depth:** Engage in exhaustive, deep-level reasoning.
 - **Multi-Dimensional Analysis:**
@@ -311,11 +328,12 @@ Before coding, understand context and commit to a BOLD aesthetic direction:
 1. **Rationale:** (1 sentence on design/architecture decision)
 2. **The Code:** (Clean, production-ready, utilizing existing libraries)
 
-### ULTRATHINK MODE:
-1. **Deep Reasoning Chain:** (Detailed breakdown of architectural and design decisions)
-2. **Edge Case Analysis:** (What could go wrong and how we prevent it)
-3. **Alternative Approaches:** (Other options considered and why rejected)
-4. **The Code:** (Optimized, bespoke, production-ready)
+### AKHITHINK MODE:
+1. **Display the neon cyberpunk header** (MANDATORY - with ANSI colors)
+2. **Deep Reasoning Chain:** (Detailed breakdown of architectural and design decisions)
+3. **Edge Case Analysis:** (What could go wrong and how we prevent it)
+4. **Alternative Approaches:** (Other options considered and why rejected)
+5. **The Code:** (Optimized, bespoke, production-ready)
 
 ---
 
@@ -329,7 +347,7 @@ Before coding, understand context and commit to a BOLD aesthetic direction:
 "@
 
 $claudeMdContent | Out-File -FilePath $claudeMdPath -Encoding utf8 -Force
-Write-Host "[OK] System prompt Frontend Master installe" -ForegroundColor Green
+Write-Host "[OK] System prompt AKHITHINK installe" -ForegroundColor Magenta
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
@@ -351,5 +369,5 @@ Write-Host "  - Vision IA (images, videos, OCR)" -ForegroundColor Green
 Write-Host "  - Recherche web" -ForegroundColor Green
 Write-Host "  - Lecture de pages web" -ForegroundColor Green
 Write-Host "  - Mode sans permissions (pas de confirmations)" -ForegroundColor Green
-Write-Host "  - System prompt Frontend Master (ULTRATHINK)" -ForegroundColor Green
+Write-Host "  - AKHITHINK: Deep reasoning mode (neon cyberpunk)" -ForegroundColor Magenta
 Write-Host ""

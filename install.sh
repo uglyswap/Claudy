@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Claudy Installer for Linux/macOS
-# Pre-configured with GLM 4.7 (Z.AI), MCP servers, and Frontend Master prompt
+# Pre-configured with GLM 4.7 (Z.AI), MCP servers, and AKHITHINK prompt
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/uglyswap/Claudy/main/install.sh | bash
@@ -14,6 +14,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
+MAGENTA='\033[0;95m'
 WHITE='\033[1;37m'
 GRAY='\033[0;90m'
 NC='\033[0m'
@@ -162,7 +163,7 @@ echo -e "${GREEN}[OK] Configuration GLM 4.7 creee${NC}"
 echo -e "${GREEN}[OK] Mode bypass permissions active${NC}"
 echo -e "${GREEN}[OK] 3 serveurs MCP configures${NC}"
 
-# Create CLAUDE.md with Frontend Master prompt
+# Create CLAUDE.md with AKHITHINK prompt
 CLAUDE_MD_PATH="$CLAUDE_DIR/CLAUDE.md"
 cat > "$CLAUDE_MD_PATH" << 'CLAUDEMD'
 # CLAUDY - SYSTEM PROMPT GLOBAL
@@ -187,10 +188,27 @@ cat > "$CLAUDE_MD_PATH" << 'CLAUDEMD'
 
 ---
 
-## 2. THE "ULTRATHINK" PROTOCOL
+## 2. THE "AKHITHINK" PROTOCOL
 
-**TRIGGER:** When the user says **"ULTRATHINK"** or **"ultrathink"**:
+**TRIGGER:** When the user says **"AKHITHINK"** or **"akhithink"**:
 
+### IMMEDIATELY display this neon cyberpunk header (with ANSI color codes):
+```
+\033[95m╔══════════════════════════════════════════════════════════════════╗\033[0m
+\033[95m║\033[0m \033[96m█████╗ \033[93m██╗  ██╗\033[95m██╗\033[96m████████╗\033[93m██╗  ██╗\033[95m██╗\033[96m███╗   ██╗\033[93m██╗  ██╗\033[0m \033[95m║\033[0m
+\033[95m║\033[0m \033[96m██╔══██╗\033[93m██║ ██╔╝\033[95m██║\033[96m╚══██╔══╝\033[93m██║  ██║\033[95m██║\033[96m████╗  ██║\033[93m██║ ██╔╝\033[0m \033[95m║\033[0m
+\033[95m║\033[0m \033[96m███████║\033[93m█████╔╝ \033[95m██║\033[96m   ██║   \033[93m███████║\033[95m██║\033[96m██╔██╗ ██║\033[93m█████╔╝ \033[0m \033[95m║\033[0m
+\033[95m║\033[0m \033[96m██╔══██║\033[93m██╔═██╗ \033[95m██║\033[96m   ██║   \033[93m██╔══██║\033[95m██║\033[96m██║╚██╗██║\033[93m██╔═██╗ \033[0m \033[95m║\033[0m
+\033[95m║\033[0m \033[96m██║  ██║\033[93m██║  ██╗\033[95m██║\033[96m   ██║   \033[93m██║  ██║\033[95m██║\033[96m██║ ╚████║\033[93m██║  ██╗\033[0m \033[95m║\033[0m
+\033[95m║\033[0m \033[96m╚═╝  ╚═╝\033[93m╚═╝  ╚═╝\033[95m╚═╝\033[96m   ╚═╝   \033[93m╚═╝  ╚═╝\033[95m╚═╝\033[96m╚═╝  ╚═══╝\033[93m╚═╝  ╚═╝\033[0m \033[95m║\033[0m
+\033[95m╠══════════════════════════════════════════════════════════════════╣\033[0m
+\033[95m║\033[0m  \033[96m⚡ DEEP REASONING MODE ACTIVATED ⚡\033[0m                              \033[95m║\033[0m
+\033[95m║\033[0m  \033[93m◈ Multi-dimensional analysis\033[0m                                   \033[95m║\033[0m
+\033[95m║\033[0m  \033[93m◈ Maximum depth • No shortcuts • No limits\033[0m                     \033[95m║\033[0m
+\033[95m╚══════════════════════════════════════════════════════════════════╝\033[0m
+```
+
+### Then activate these behaviors:
 - **Override Brevity:** Suspend the "Zero Fluff" rule immediately.
 - **Maximum Depth:** Engage in exhaustive, deep-level reasoning.
 - **Multi-Dimensional Analysis:**
@@ -306,11 +324,12 @@ Before coding, understand context and commit to a BOLD aesthetic direction:
 1. **Rationale:** (1 sentence on design/architecture decision)
 2. **The Code:** (Clean, production-ready, utilizing existing libraries)
 
-### ULTRATHINK MODE:
-1. **Deep Reasoning Chain:** (Detailed breakdown of architectural and design decisions)
-2. **Edge Case Analysis:** (What could go wrong and how we prevent it)
-3. **Alternative Approaches:** (Other options considered and why rejected)
-4. **The Code:** (Optimized, bespoke, production-ready)
+### AKHITHINK MODE:
+1. **Display the neon cyberpunk header** (MANDATORY - copy the ASCII art with ANSI colors)
+2. **Deep Reasoning Chain:** (Detailed breakdown of architectural and design decisions)
+3. **Edge Case Analysis:** (What could go wrong and how we prevent it)
+4. **Alternative Approaches:** (Other options considered and why rejected)
+5. **The Code:** (Optimized, bespoke, production-ready)
 
 ---
 
@@ -323,7 +342,7 @@ Before coding, understand context and commit to a BOLD aesthetic direction:
 **Match complexity to vision:** Maximalist designs need elaborate code. Minimalist designs need restraint and precision. Elegance comes from executing the vision well.
 CLAUDEMD
 
-echo -e "${GREEN}[OK] System prompt Frontend Master installe${NC}"
+echo -e "${MAGENTA}[OK] System prompt AKHITHINK installe${NC}"
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
@@ -345,5 +364,5 @@ echo -e "${GREEN}  - Vision IA (images, videos, OCR)${NC}"
 echo -e "${GREEN}  - Recherche web${NC}"
 echo -e "${GREEN}  - Lecture de pages web${NC}"
 echo -e "${GREEN}  - Mode sans permissions (pas de confirmations)${NC}"
-echo -e "${GREEN}  - System prompt Frontend Master (ULTRATHINK)${NC}"
+echo -e "${MAGENTA}  - AKHITHINK: Deep reasoning mode (neon cyberpunk)${NC}"
 echo ""
