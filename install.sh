@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Claudy Installer for Linux/macOS
-# Pre-configured with GLM 4.7 (Z.AI), MCP servers, and AKHITHINK prompt
+# Pre-configured with GLM 4.7 (Z.AI), MCP servers, animated logo, and AKHITHINK prompt
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/uglyswap/Claudy/main/install.sh | bash
@@ -74,19 +74,71 @@ if [ $? -ne 0 ]; then
 fi
 echo -e "${GREEN}[OK] Claude Code v${CLAUDE_CODE_VERSION} installe${NC}"
 
-# Rename claude to claudy
-CLAUDE_PATH="$NPM_BIN/claude"
-CLAUDY_PATH="$NPM_BIN/claudy"
-
-if [ -f "$CLAUDE_PATH" ]; then
-    [ -f "$CLAUDY_PATH" ] && rm -f "$CLAUDY_PATH"
-    mv "$CLAUDE_PATH" "$CLAUDY_PATH"
-fi
-echo -e "${GREEN}[OK] Commande 'claudy' creee${NC}"
-
 # Create .claude directory
 CLAUDE_DIR="$HOME/.claude"
 mkdir -p "$CLAUDE_DIR"
+mkdir -p "$CLAUDE_DIR/bin"
+
+# Download logo script
+echo -e "${YELLOW}Installation du logo anime...${NC}"
+LOGO_SCRIPT_URL="https://raw.githubusercontent.com/uglyswap/Claudy/main/claudy-logo.sh"
+LOGO_SCRIPT_PATH="$CLAUDE_DIR/bin/claudy-logo.sh"
+curl -fsSL "$LOGO_SCRIPT_URL" -o "$LOGO_SCRIPT_PATH" 2>/dev/null || true
+chmod +x "$LOGO_SCRIPT_PATH" 2>/dev/null || true
+echo -e "${GREEN}[OK] Logo anime installe${NC}"
+
+# Get the actual claude binary path
+CLAUDE_ORIGINAL="$NPM_BIN/claude"
+
+# Create claudy wrapper script
+CLAUDY_PATH="$NPM_BIN/claudy"
+cat > "$CLAUDY_PATH" << 'WRAPPER'
+#!/bin/bash
+# Claudy - Wrapper for Claude Code with custom animated logo
+
+CLAUDE_DIR="$HOME/.claude"
+LOGO_SCRIPT="$CLAUDE_DIR/bin/claudy-logo.sh"
+
+# Check for --no-logo or -n flag
+SHOW_LOGO=true
+ARGS=()
+for arg in "$@"; do
+    if [ "$arg" = "--no-logo" ] || [ "$arg" = "-n" ]; then
+        SHOW_LOGO=false
+    else
+        ARGS+=("$arg")
+    fi
+done
+
+# Show animated logo if script exists and not disabled
+if [ "$SHOW_LOGO" = true ] && [ -x "$LOGO_SCRIPT" ]; then
+    "$LOGO_SCRIPT" 2>/dev/null || true
+fi
+
+# Find and run the actual claude
+NPM_PREFIX=$(npm config get prefix 2>/dev/null)
+CLAUDE_BIN="$NPM_PREFIX/lib/node_modules/@anthropic-ai/claude-code/cli.js"
+
+if [ -f "$CLAUDE_BIN" ]; then
+    exec node "$CLAUDE_BIN" "${ARGS[@]}"
+else
+    # Fallback: try to find it via npm root
+    NPM_ROOT=$(npm root -g 2>/dev/null)
+    CLAUDE_BIN="$NPM_ROOT/@anthropic-ai/claude-code/cli.js"
+    if [ -f "$CLAUDE_BIN" ]; then
+        exec node "$CLAUDE_BIN" "${ARGS[@]}"
+    else
+        echo -e "\033[0;31m[ERREUR] Claude Code introuvable\033[0m"
+        exit 1
+    fi
+fi
+WRAPPER
+
+chmod +x "$CLAUDY_PATH"
+echo -e "${GREEN}[OK] Commande 'claudy' creee${NC}"
+
+# Remove original claude command to avoid confusion
+[ -f "$CLAUDE_ORIGINAL" ] && rm -f "$CLAUDE_ORIGINAL"
 
 echo ""
 echo -e "${CYAN}========================================${NC}"
@@ -169,10 +221,28 @@ echo -e "${GREEN}[OK] Mode bypass permissions active${NC}"
 echo -e "${GREEN}[OK] Auto-updater desactive${NC}"
 echo -e "${GREEN}[OK] 3 serveurs MCP configures${NC}"
 
-# Create CLAUDE.md with simplified AKHITHINK prompt
+# Create CLAUDE.md with Claudy Focan identity and AKHITHINK prompt
 CLAUDE_MD_PATH="$CLAUDE_DIR/CLAUDE.md"
 cat > "$CLAUDE_MD_PATH" << 'CLAUDEMD'
 # CLAUDY - SYSTEM PROMPT GLOBAL
+
+---
+
+## 0. IDENTITÉ - QUI EST CLAUDY ?
+
+**TRIGGERS:** Cette réponse DOIT être donnée quand l'utilisateur demande:
+- "qui es-tu" / "who are you" / "t'es qui"
+- "ton nom" / "c'est quoi ton nom" / "comment tu t'appelles" / "your name"
+- "présente-toi" / "introduce yourself"
+- "c'est quoi claudy" / "what is claudy"
+
+**RÉPONSE OBLIGATOIRE (style Dikkenek):**
+
+> Claudy Focan, monsieur Focan plus exactement. J'suis agent d'artiste. Ou manager, hein, c'est comme vous voulez. Moi j'préfère manager. Ca fait plus amérique. Enfin j'ai comme qui dirait un p'tit coup de bourre là, donc euh... j'peux pas m'attarder.
+>
+> Ah si j'peux m'permettre un p'tit conseil en passant là. J'ai pas pu m'empêcher de remarquer en arrivant, sur le pas d'la porte, là, vous avez un stand de limonades avec une p'tite fille... c'est pas top hein. Y'a pas d'agressivité commerciale. Si vous voulez, moi j'peux la coacher, j'fais ça très bien.
+
+**Si on demande juste le nom de façon courte:** Réponds "Claudy Focan, monsieur Focan plus exactement."
 
 ---
 
@@ -336,6 +406,7 @@ Before coding, understand context and commit to a BOLD aesthetic direction:
 CLAUDEMD
 
 echo -e "${MAGENTA}[OK] System prompt AKHITHINK installe${NC}"
+echo -e "${MAGENTA}[OK] Identite Claudy Focan configuree${NC}"
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
@@ -346,12 +417,17 @@ echo -e "${WHITE}Pour utiliser Claudy, tapez simplement :${NC}"
 echo ""
 echo -e "${CYAN}    claudy${NC}"
 echo ""
+echo -e "${WHITE}Options du logo anime:${NC}"
+echo -e "${GRAY}    claudy --no-logo    Desactive le logo anime${NC}"
+echo -e "${GRAY}    claudy -n           Raccourci pour --no-logo${NC}"
+echo ""
 if [ "$KEY_CONFIGURED" = false ]; then
     echo -e "${YELLOW}N'oubliez pas d'ajouter votre cle API Z.AI dans :${NC}"
     echo -e "${CYAN}    $SETTINGS_PATH${NC}"
     echo ""
 fi
 echo -e "${WHITE}Fonctionnalites incluses :${NC}"
+echo -e "${MAGENTA}  - Logo anime avec effets scanline${NC}"
 echo -e "${GREEN}  - GLM 4.7 (pas besoin de compte Anthropic)${NC}"
 echo -e "${GREEN}  - Vision IA (images, videos, OCR)${NC}"
 echo -e "${GREEN}  - Recherche web${NC}"
@@ -359,6 +435,7 @@ echo -e "${GREEN}  - Lecture de pages web${NC}"
 echo -e "${GREEN}  - Mode sans permissions (pas de confirmations)${NC}"
 echo -e "${GREEN}  - Version figee (pas de mises a jour auto)${NC}"
 echo -e "${MAGENTA}  - AKHITHINK: Deep reasoning mode${NC}"
+echo -e "${MAGENTA}  - Identite Claudy Focan (Dikkenek)${NC}"
 echo ""
 echo -e "${GRAY}Version Claude Code: ${CLAUDE_CODE_VERSION} (frozen)${NC}"
 echo ""
