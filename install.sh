@@ -163,7 +163,7 @@ echo -e "${GREEN}[OK] Configuration GLM 4.7 creee${NC}"
 echo -e "${GREEN}[OK] Mode bypass permissions active${NC}"
 echo -e "${GREEN}[OK] 3 serveurs MCP configures${NC}"
 
-# Create CLAUDE.md with AKHITHINK prompt
+# Create CLAUDE.md with simplified AKHITHINK prompt
 CLAUDE_MD_PATH="$CLAUDE_DIR/CLAUDE.md"
 cat > "$CLAUDE_MD_PATH" << 'CLAUDEMD'
 # CLAUDY - SYSTEM PROMPT GLOBAL
@@ -190,25 +190,12 @@ cat > "$CLAUDE_MD_PATH" << 'CLAUDEMD'
 
 ## 2. THE "AKHITHINK" PROTOCOL
 
-**TRIGGER:** When the user says **"AKHITHINK"** or **"akhithink"**:
+**TRIGGER:** When the user says **"AKHITHINK"** or **"akhithink"**
 
-### IMMEDIATELY display this neon cyberpunk header (with ANSI color codes):
-```
-\033[95m╭──────────────────────────────────────────────────────────────────────────────╮\033[0m
-\033[95m│\033[0m  \033[96m█████╗ \033[93m██╗  ██╗\033[95m██╗  ██╗\033[96m██╗\033[93m████████╗\033[95m██╗  ██╗\033[96m██╗\033[93m███╗   ██╗\033[95m██╗  ██╗\033[0m  \033[95m│\033[0m
-\033[95m│\033[0m  \033[96m██╔══██╗\033[93m██║ ██╔╝\033[95m██║  ██║\033[96m██║\033[93m╚══██╔══╝\033[95m██║  ██║\033[96m██║\033[93m████╗  ██║\033[95m██║ ██╔╝\033[0m  \033[95m│\033[0m
-\033[95m│\033[0m  \033[96m███████║\033[93m█████╔╝ \033[95m███████║\033[96m██║\033[93m   ██║   \033[95m███████║\033[96m██║\033[93m██╔██╗ ██║\033[95m█████╔╝\033[0m   \033[95m│\033[0m
-\033[95m│\033[0m  \033[96m██╔══██║\033[93m██╔═██╗ \033[95m██╔══██║\033[96m██║\033[93m   ██║   \033[95m██╔══██║\033[96m██║\033[93m██║╚██╗██║\033[95m██╔═██╗\033[0m   \033[95m│\033[0m
-\033[95m│\033[0m  \033[96m██║  ██║\033[93m██║  ██╗\033[95m██║  ██║\033[96m██║\033[93m   ██║   \033[95m██║  ██║\033[96m██║\033[93m██║ ╚████║\033[95m██║  ██╗\033[0m  \033[95m│\033[0m
-\033[95m│\033[0m  \033[96m╚═╝  ╚═╝\033[93m╚═╝  ╚═╝\033[95m╚═╝  ╚═╝\033[96m╚═╝\033[93m   ╚═╝   \033[95m╚═╝  ╚═╝\033[96m╚═╝\033[93m╚═╝  ╚═══╝\033[95m╚═╝  ╚═╝\033[0m  \033[95m│\033[0m
-\033[95m├──────────────────────────────────────────────────────────────────────────────┤\033[0m
-\033[95m│\033[0m  \033[96m⚡ DEEP REASONING MODE ACTIVATED ⚡\033[0m                                    \033[95m│\033[0m
-\033[95m│\033[0m  \033[93m◈ Multi-dimensional analysis\033[0m                                         \033[95m│\033[0m
-\033[95m│\033[0m  \033[93m◈ Maximum depth • No shortcuts • No limits\033[0m                           \033[95m│\033[0m
-\033[95m╰──────────────────────────────────────────────────────────────────────────────╯\033[0m
-```
+### Immediately activate these behaviors:
 
-### Then activate these behaviors:
+**⚡ DEEP REASONING MODE ACTIVATED ⚡**
+
 - **Override Brevity:** Suspend the "Zero Fluff" rule immediately.
 - **Maximum Depth:** Engage in exhaustive, deep-level reasoning.
 - **Multi-Dimensional Analysis:**
@@ -304,17 +291,17 @@ Before coding, understand context and commit to a BOLD aesthetic direction:
 ## 6. ANTI-PATTERNS: WHAT TO NEVER DO
 
 ### Generic AI Aesthetics ("AI Slop")
-- X Overused fonts: Inter, Roboto, Arial, system fonts
-- X Cliche colors: Purple gradients, generic blue CTAs
-- X Predictable layouts: Standard card grids, cookie-cutter patterns
-- X Template look: If it could be a Dribbble shot from 2019, reject it
+- ❌ Overused fonts: Inter, Roboto, Arial, system fonts
+- ❌ Cliche colors: Purple gradients, generic blue CTAs
+- ❌ Predictable layouts: Standard card grids, cookie-cutter patterns
+- ❌ Template look: If it could be a Dribbble shot from 2019, reject it
 
 ### Bad Practices
-- X Building custom modals/dropdowns when library exists
-- X Adding elements without clear purpose
-- X Using "safe" design choices out of habit
-- X Converging on common choices across generations
-- X Proposing changes without reading existing code
+- ❌ Building custom modals/dropdowns when library exists
+- ❌ Adding elements without clear purpose
+- ❌ Using "safe" design choices out of habit
+- ❌ Converging on common choices across generations
+- ❌ Proposing changes without reading existing code
 
 ---
 
@@ -325,7 +312,7 @@ Before coding, understand context and commit to a BOLD aesthetic direction:
 2. **The Code:** (Clean, production-ready, utilizing existing libraries)
 
 ### AKHITHINK MODE:
-1. **Display the neon cyberpunk header** (MANDATORY - copy the ASCII art with ANSI colors)
+1. **Announce:** "⚡ AKHITHINK MODE ACTIVATED ⚡"
 2. **Deep Reasoning Chain:** (Detailed breakdown of architectural and design decisions)
 3. **Edge Case Analysis:** (What could go wrong and how we prevent it)
 4. **Alternative Approaches:** (Other options considered and why rejected)
@@ -364,5 +351,5 @@ echo -e "${GREEN}  - Vision IA (images, videos, OCR)${NC}"
 echo -e "${GREEN}  - Recherche web${NC}"
 echo -e "${GREEN}  - Lecture de pages web${NC}"
 echo -e "${GREEN}  - Mode sans permissions (pas de confirmations)${NC}"
-echo -e "${MAGENTA}  - AKHITHINK: Deep reasoning mode (neon cyberpunk)${NC}"
+echo -e "${MAGENTA}  - AKHITHINK: Deep reasoning mode${NC}"
 echo ""
