@@ -259,6 +259,24 @@ $claudyCmdContent | Out-File -FilePath $claudyCmdPath -Encoding ascii -Force
 Write-Host "[OK] Wrappers Claudy crees dans ~/.claudy/bin/" -ForegroundColor Green
 
 # ============================================
+# INSTALL CLE COMMAND (STANDALONE API KEY UPDATE)
+# ============================================
+Write-Host "Installation de la commande 'cle'..." -ForegroundColor Yellow
+
+$clePs1Url = "https://raw.githubusercontent.com/uglyswap/Claudy/main/bin/cle.ps1"
+$clePs1Path = Join-Path $claudyBinDir "cle.ps1"
+$cleCmdUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/bin/cle.cmd"
+$cleCmdPath = Join-Path $claudyBinDir "cle.cmd"
+
+try {
+    Invoke-WebRequest -Uri $clePs1Url -OutFile $clePs1Path -UseBasicParsing
+    Invoke-WebRequest -Uri $cleCmdUrl -OutFile $cleCmdPath -UseBasicParsing
+    Write-Host "[OK] Commande 'cle' installee (mise a jour cle API sans appeler l'API)" -ForegroundColor Green
+} catch {
+    Write-Host "[WARN] Impossible d'installer la commande 'cle'" -ForegroundColor Yellow
+}
+
+# ============================================
 # ADD CLAUDY TO PATH
 # ============================================
 Write-Host "Configuration du PATH..." -ForegroundColor Yellow
@@ -300,8 +318,8 @@ if ([string]::IsNullOrWhiteSpace($apiKey)) {
     $keyConfigured = $false
     Write-Host ""
     Write-Host "[INFO] Configuration creee sans cle API." -ForegroundColor Yellow
-    Write-Host "       Editez le fichier suivant pour ajouter votre cle :" -ForegroundColor Yellow
-    Write-Host "       $settingsPath" -ForegroundColor Cyan
+    Write-Host "       Utilisez la commande 'cle' pour ajouter votre cle :" -ForegroundColor Yellow
+    Write-Host "       cle VOTRE_CLE_API" -ForegroundColor Cyan
 }
 
 # Create settings.json with GLM config, MCP servers, and bypass permissions
@@ -413,8 +431,8 @@ Write-Host "    claudy --no-logo    Desactive le logo anime" -ForegroundColor Gr
 Write-Host "    claudy -n           Raccourci pour --no-logo" -ForegroundColor Gray
 Write-Host ""
 if (-not $keyConfigured) {
-    Write-Host "N'oubliez pas d'ajouter votre cle API Z.AI dans :" -ForegroundColor Yellow
-    Write-Host "    $settingsPath" -ForegroundColor Cyan
+    Write-Host "N'oubliez pas d'ajouter votre cle API Z.AI :" -ForegroundColor Yellow
+    Write-Host "    cle VOTRE_CLE_API" -ForegroundColor Cyan
     Write-Host ""
 }
 Write-Host "========================================" -ForegroundColor Cyan
@@ -443,12 +461,14 @@ Write-Host "  - AKHITHINK: Deep reasoning mode" -ForegroundColor Magenta
 Write-Host "  - Identite Claudy Focan (Dikkenek)" -ForegroundColor Magenta
 Write-Host ""
 Write-Host "Commandes speciales :" -ForegroundColor White
-Write-Host "  - /cle-api <nouvelle_cle>  Changer la cle API Z.AI" -ForegroundColor Cyan
+Write-Host "  cle                     Mettre a jour la cle API (standalone)" -ForegroundColor Cyan
+Write-Host "  cle NOUVELLE_CLE        Mettre a jour directement" -ForegroundColor Cyan
+Write-Host "  /cle-api                Mettre a jour via Claudy (skill)" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Structure d'installation :" -ForegroundColor Gray
 Write-Host "  ~/.claudy/" -ForegroundColor DarkGray
-Write-Host "    ├── bin/           (claudy.cmd, claudy.ps1)" -ForegroundColor DarkGray
-Write-Host "    ├── lib/           (node_modules isolés)" -ForegroundColor DarkGray
+Write-Host "    ├── bin/           (claudy, cle)" -ForegroundColor DarkGray
+Write-Host "    ├── lib/           (node_modules isoles)" -ForegroundColor DarkGray
 Write-Host "    ├── modules/       (Claudy-Logo.psm1)" -ForegroundColor DarkGray
 Write-Host "    ├── skills/        (skills Claudy)" -ForegroundColor DarkGray
 Write-Host "    ├── settings.json  (configuration)" -ForegroundColor DarkGray
