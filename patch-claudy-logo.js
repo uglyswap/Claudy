@@ -317,96 +317,35 @@ if (content.includes('Welcome back')) {
     patchCount++;
     console.log('  [OK] Replaced "Welcome back" → "Bienvenue"');
 }
+// ═══════════════════════════════════════════════════════════════════════════
+// PATCH 11: Skip bypass permissions warning dialog (auto-accept)
+// When running with --dangerously-skip-permissions, Claudy auto-accepts the warning
+// The ED9 component shows the bypass warning dialog. We modify its useEffect
+// to immediately call onAccept (A) after logging telemetry
+// ═══════════════════════════════════════════════════════════════════════════
+
+const bypassDialogOld = 'SD.default.useEffect(()=>{n("tengu_bypass_permissions_mode_dialog_shown",{})},[])';
+const bypassDialogNew = 'SD.default.useEffect(()=>{n("tengu_bypass_permissions_mode_dialog_shown",{}),A()},[])';
+
+if (content.includes(bypassDialogOld)) {
+    content = content.replace(bypassDialogOld, bypassDialogNew);
+    patchCount++;
+    console.log('  [OK] Patched bypass permissions dialog to auto-accept');
+} else {
+    console.log('  [WARN] Bypass dialog pattern not found');
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PATCH 11: Replace "Welcome to Claude Code" with "Welcome to Claudy"
+// PATCH 12: Replace onboarding "Welcome to Claude Code" with Claudy branding
+// This changes the welcome screen title during first-time setup
 // ═══════════════════════════════════════════════════════════════════════════
+
 if (content.includes('"Welcome to Claude Code"')) {
-    content = content.split('"Welcome to Claude Code"').join('"Welcome to Claudy"');
+    content = content.split('"Welcome to Claude Code"').join('"Bienvenue sur Claudy"');
     patchCount++;
-    console.log('  [OK] Replaced "Welcome to Claude Code" → "Welcome to Claudy"');
+    console.log('  [OK] Replaced onboarding "Welcome to Claude Code" → "Bienvenue sur Claudy"');
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// PATCH 12: Replace onboarding ASCII art (dark theme) with CLAUDY logo
-// The original shows stars (*) and cloud blocks (█████▓▓░, ███▓░, etc.)
-// ═══════════════════════════════════════════════════════════════════════════
-
-const onboardingOldLines = [
-    '"     *                                       █████▓▓░     "',
-    '"                                 *         ███▓░     ░░   "',
-    '"            ░░░░░░                        ███▓░           "',
-    '"    ░░░   ░░░░░░░░░░                      ███▓░           "',
-    '"                                             ░▓▓███▓▓░    "'
-];
-
-const onboardingNewLines = [
-    '" ██████╗██╗      █████╗ ██╗   ██╗██████╗ ██╗   ██╗        "',
-    '"██╔════╝██║     ██╔══██╗██║   ██║██╔══██╗╚██╗ ██╔╝        "',
-    '"██║     ██║     ███████║██║   ██║██║  ██║ ╚████╔╝         "',
-    '"██║     ██║     ██╔══██║██║   ██║██║  ██║  ╚██╔╝          "',
-    '"              ▓▒░ CLAUDY CLI ░▒▓                          "'
-];
-
-let onboardingPatchApplied = 0;
-for (let i = 0; i < onboardingOldLines.length; i++) {
-    if (content.includes(onboardingOldLines[i])) {
-        content = content.replace(onboardingOldLines[i], onboardingNewLines[i]);
-        onboardingPatchApplied++;
-    }
-}
-
-if (onboardingPatchApplied > 0) {
-    patchCount++;
-    console.log(`  [OK] Replaced ${onboardingPatchApplied} onboarding ASCII art lines with CLAUDY logo`);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// PATCH 13: Replace onboarding ASCII art (light theme) with CLAUDY logo
-// ═══════════════════════════════════════════════════════════════════════════
-
-const onboardingLightOldLines = [
-    '"            ░░░░░░                                        "',
-    '"    ░░░   ░░░░░░░░░░                                      "',
-    '"   ░░░░░░░░░░░░░░░░░░░                                    "'
-];
-
-const onboardingLightNewLines = [
-    '" ██████╗██╗      █████╗ ██╗   ██╗██████╗ ██╗   ██╗        "',
-    '"██╔════╝██║     ██╔══██╗██║   ██║██╔══██╗╚██╗ ██╔╝        "',
-    '"██║     ██║     ███████║██║   ██║██║  ██║ ╚████╔╝         "'
-];
-
-let lightPatchApplied = 0;
-for (let i = 0; i < onboardingLightOldLines.length; i++) {
-    if (content.includes(onboardingLightOldLines[i])) {
-        content = content.replace(onboardingLightOldLines[i], onboardingLightNewLines[i]);
-        lightPatchApplied++;
-    }
-}
-
-if (lightPatchApplied > 0) {
-    patchCount++;
-    console.log(`  [OK] Replaced ${lightPatchApplied} light theme onboarding lines with CLAUDY logo`);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// PATCH 14: Replace Claude mascot from onboarding with CLAUDY text
-// ═══════════════════════════════════════════════════════════════════════════
-
-const clawdPatterns = [
-    { old: ',"      ",s0.default.createElement(C,{color:"clawd_body"}," █████████ "),"', new: ',"╚██████╗███████╗██║  ██║╚██████╔╝██████╔╝   ██║   "' },
-    { old: ',"      ",s0.default.createElement(C,{color:"clawd_body"},"██▄█████▄██"),', new: '," ╚═════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝    ╚═╝   ",' },
-    { old: '"…………………",s0.default.createElement(C,{color:"clawd_body"},"█ █   █ █"),"………………………………………………………………………………………………………………"', new: '"……………………………▓▒░ CLAUDY CLI ░▒▓………………………………………………………………"' }
-];
-
-for (const p of clawdPatterns) {
-    if (content.includes(p.old)) {
-        content = content.replace(p.old, p.new);
-        patchCount++;
-        console.log('  [OK] Replaced clawd mascot line with CLAUDY branding');
-    }
-}
 
 
 // ═══════════════════════════════════════════════════════════════════════════
