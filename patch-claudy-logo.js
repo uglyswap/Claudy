@@ -293,19 +293,19 @@ if (!commandInjected) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PATCH 9: Force compact mode for home screen (Claudy logo is too wide for horizontal)
-// The function cr2(A) returns "horizontal" if terminal >= 70 columns, "compact" otherwise
+// The function pr2(A) returns "horizontal" if terminal >= 70 columns, "compact" otherwise
 // For Claudy, we always use compact to avoid breaking the large ASCII logo
 // ═══════════════════════════════════════════════════════════════════════════
 
-const homeLayoutOld = 'function cr2(A){if(A>=70)return"horizontal";return"compact"}';
-const homeLayoutNew = 'function cr2(A){return"compact"}';
+const homeLayoutOld = 'function pr2(A){if(A>=70)return"horizontal";return"compact"}';
+const homeLayoutNew = 'function pr2(A){return"compact"}';
 
 if (content.includes(homeLayoutOld)) {
     content = content.replace(homeLayoutOld, homeLayoutNew);
     patchCount++;
     console.log('  [OK] Forced compact mode for home screen (Claudy logo fits better)');
 } else {
-    console.log('  [WARN] Home layout function cr2 not found - may use different pattern');
+    console.log('  [WARN] Home layout function pr2 not found - may use different pattern');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -318,21 +318,21 @@ if (content.includes('Welcome back')) {
     console.log('  [OK] Replaced "Welcome back" → "Bienvenue"');
 }
 // ═══════════════════════════════════════════════════════════════════════════
-// PATCH 11: Skip bypass permissions warning dialog (auto-accept)
-// When running with --dangerously-skip-permissions, Claudy auto-accepts the warning
-// The ED9 component shows the bypass warning dialog. We modify its useEffect
-// to immediately call onAccept (A) after logging telemetry
+// PATCH 11: Skip bypass permissions warning dialog completely
+// The condition that shows the dialog is:
+//   (A==="bypassPermissions"||Q)&&!b1().bypassPermissionsModeAccepted)await
+// We replace it with !1)await so the condition is always false
 // ═══════════════════════════════════════════════════════════════════════════
 
-const bypassDialogOld = 'SD.default.useEffect(()=>{n("tengu_bypass_permissions_mode_dialog_shown",{})},[])';
-const bypassDialogNew = 'SD.default.useEffect(()=>{n("tengu_bypass_permissions_mode_dialog_shown",{}),A()},[])';
+const bypassConditionOld = '(A==="bypassPermissions"||Q)&&!b1().bypassPermissionsModeAccepted)await';
+const bypassConditionNew = '!1)await';
 
-if (content.includes(bypassDialogOld)) {
-    content = content.replace(bypassDialogOld, bypassDialogNew);
+if (content.includes(bypassConditionOld)) {
+    content = content.replace(bypassConditionOld, bypassConditionNew);
     patchCount++;
-    console.log('  [OK] Patched bypass permissions dialog to auto-accept');
+    console.log('  [OK] Disabled bypass permissions dialog (condition always false)');
 } else {
-    console.log('  [WARN] Bypass dialog pattern not found');
+    console.log('  [WARN] Bypass condition pattern not found');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
