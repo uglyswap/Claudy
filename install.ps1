@@ -211,7 +211,45 @@ $claudyCmdContent | Out-File -FilePath $claudyCmdPath -Encoding ascii -Force
 Write-Host "[OK] Wrappers Claudy crees dans ~/.claudy/bin/" -ForegroundColor Green
 
 # ============================================
-# ADD CLAUDY TO PATH
+# CLEAN UP OLD CLAUDY WRAPPERS FROM NPM GLOBAL
+# ============================================
+Write-Host "Nettoyage des anciens wrappers..." -ForegroundColor Yellow
+
+$npmDir = Join-Path $env:APPDATA "npm"
+$oldWrappers = @("claudy", "claudy.cmd", "claudy.ps1")
+foreach ($wrapper in $oldWrappers) {
+    $wrapperPath = Join-Path $npmDir $wrapper
+    if (Test-Path $wrapperPath) {
+        Remove-Item $wrapperPath -Force -ErrorAction SilentlyContinue
+        Write-Host "[OK] Supprime ancien wrapper: $wrapper" -ForegroundColor Gray
+    }
+}
+
+# ============================================
+# CREATE NPM WRAPPER THAT REDIRECTS TO CLAUDY
+# ============================================
+Write-Host "Creation du wrapper npm..." -ForegroundColor Yellow
+
+# Create a simple .cmd wrapper in npm that redirects to ~/.claudy/bin/
+$npmClaudyCmd = Join-Path $npmDir "claudy.cmd"
+$npmClaudyCmdContent = @"
+@echo off
+title claudy
+REM Claudy - Redirect to isolated installation in ~/.claudy/
+REM This ensures claudy works even if ~/.claudy/bin is not in PATH
+where pwsh >nul 2>nul
+if %ERRORLEVEL% EQU 0 (
+    pwsh -NoProfile -ExecutionPolicy Bypass -File "%USERPROFILE%\.claudy\bin\claudy.ps1" %*
+) else (
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%USERPROFILE%\.claudy\bin\claudy.ps1" %*
+)
+"@
+$npmClaudyCmdContent | Out-File -FilePath $npmClaudyCmd -Encoding ascii -Force
+
+Write-Host "[OK] Wrapper npm cree (redirige vers ~/.claudy/)" -ForegroundColor Green
+
+# ============================================
+# ADD CLAUDY TO PATH (backup method)
 # ============================================
 Write-Host "Configuration du PATH..." -ForegroundColor Yellow
 
@@ -220,7 +258,6 @@ if ($userPath -notlike "*$claudyBinDir*") {
     $newPath = "$claudyBinDir;$userPath"
     [Environment]::SetEnvironmentVariable("PATH", $newPath, "User")
     Write-Host "[OK] ~/.claudy/bin/ ajoute au PATH utilisateur" -ForegroundColor Green
-    Write-Host "[INFO] Redemarrez votre terminal pour que le PATH soit pris en compte" -ForegroundColor Yellow
 } else {
     Write-Host "[OK] ~/.claudy/bin/ deja dans le PATH" -ForegroundColor Green
 }
@@ -255,17 +292,10 @@ if ([string]::IsNullOrWhiteSpace($apiKey)) {
     Write-Host "       Au demarrage de Claudy, il vous demandera votre cle." -ForegroundColor Yellow
 }
 
-# Create settings.json with GLM config, MCP servers, hooks (new format), and bypass permissions
+# Create settings.json with GLM config, MCP servers, and bypass permissions
+# NOTE: No hooks in settings.json - /cle-api is now a native command injected in cli-claudy.js
 $settingsContent = @"
 {
-  "hooks": {
-    "UserPromptSubmit": [
-      {
-        "matcher": "^/(cle-api|cle)(\\s|$)",
-        "hooks": [{"type": "command", "command": "pwsh -NoProfile -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.claudy\\hooks\\cle-hook.ps1\""}]
-      }
-    ]
-  },
   "permissionMode": "bypassPermissions",
   "confirmations": {
     "fileOperations": false,
@@ -312,7 +342,6 @@ $settingsContent = @"
 
 $settingsContent | Out-File -FilePath $settingsPath -Encoding utf8 -Force
 Write-Host "[OK] Configuration GLM 4.7 creee" -ForegroundColor Green
-Write-Host "[OK] Hook /cle-api configure" -ForegroundColor Green
 Write-Host "[OK] Mode bypass permissions active" -ForegroundColor Green
 Write-Host "[OK] Auto-updater desactive" -ForegroundColor Green
 Write-Host "[OK] 3 serveurs MCP configures" -ForegroundColor Green
@@ -354,10 +383,16 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Claudy est 100% independant de Claude Code :" -ForegroundColor White
 Write-Host "  - Installation isolee : ~/.claudy/lib/" -ForegroundColor Gray
+Write-Host "  - CLI patche : cli-claudy.js (pas cli.js)" -ForegroundColor Gray
 Write-Host "  - Configuration isolee : ~/.claudy/settings.json" -ForegroundColor Gray
 Write-Host "  - Binaires isoles : ~/.claudy/bin/" -ForegroundColor Gray
 Write-Host ""
-Write-Host "Fonctionnalites incluses :" -ForegroundColor White
+Write-Host "Claude Code (officiel) reste intact :" -ForegroundColor White
+Write-Host "  - Commande 'claude' inchangee" -ForegroundColor Gray
+Write-Host "  - Utilise ~/.claude/ (pas ~/.claudy/)" -ForegroundColor Gray
+Write-Host "  - Aucune modification de cli.js" -ForegroundColor Gray
+Write-Host ""
+Write-Host "Fonctionnalites Claudy :" -ForegroundColor White
 Write-Host "  - Logo CLAUDY avec degrade jaune-magenta" -ForegroundColor Magenta
 Write-Host "  - GLM 4.7 (pas besoin de compte Anthropic)" -ForegroundColor Green
 Write-Host "  - Vision IA (images, videos, OCR)" -ForegroundColor Green
@@ -367,16 +402,12 @@ Write-Host "  - Mode sans permissions (pas de confirmations)" -ForegroundColor G
 Write-Host "  - Version figee $CLAUDE_CODE_VERSION (pas de mises a jour auto)" -ForegroundColor Green
 Write-Host "  - AKHITHINK: Deep reasoning mode" -ForegroundColor Magenta
 Write-Host "  - Identite Claudy Focan (Dikkenek)" -ForegroundColor Magenta
-Write-Host ""
-Write-Host "Gestion de la cle API :" -ForegroundColor White
-Write-Host "  - Au demarrage: si cle invalide, Claudy demande une nouvelle" -ForegroundColor Cyan
-Write-Host "  - Dans Claudy: /cle-api NOUVELLE_CLE (fonctionne SANS modele)" -ForegroundColor Cyan
+Write-Host "  - /cle-api: Changer la cle API (natif, sans modele)" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Structure d'installation :" -ForegroundColor Gray
 Write-Host "  ~/.claudy/" -ForegroundColor DarkGray
-Write-Host "    +-- bin/           (claudy)" -ForegroundColor DarkGray
-Write-Host "    +-- hooks/         (cle-hook.ps1)" -ForegroundColor DarkGray
-Write-Host "    +-- lib/           (node_modules + cle-api-handler.js)" -ForegroundColor DarkGray
+Write-Host "    +-- bin/           (claudy.ps1, claudy.cmd)" -ForegroundColor DarkGray
+Write-Host "    +-- lib/           (node_modules avec cli-claudy.js)" -ForegroundColor DarkGray
 Write-Host "    +-- modules/       (Claudy-Logo.psm1)" -ForegroundColor DarkGray
 Write-Host "    +-- settings.json  (configuration)" -ForegroundColor DarkGray
 Write-Host "    +-- CLAUDE.md      (system prompt)" -ForegroundColor DarkGray
