@@ -12,7 +12,7 @@
  * - AKHITHINK detection for rainbow animation
  * - All "Claude Code" text replaced with "Claudy"
  * - All config paths changed from ~/.claude/ to ~/.claudy/
- * - /cle-api command injected as native command (no model needed)
+ * - /cle-api command works via hook (see settings.json)
  */
 
 const fs = require('fs');
@@ -236,54 +236,12 @@ if (configDirOccurrences > 0) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PATCH 8: Inject /cle-api and /cle as native slash commands
-// These commands work WITHOUT the model - pure Node.js
+// NOTE: /cle-api command works via hook system (settings.json)
+// The hook intercepts /cle-api and /cle BEFORE reaching the model
+// This is more reliable than injecting into minified code
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Find patterns for slash command registration
-// Claude Code uses arrays like: [{name:"help",...},{name:"clear",...}]
-// We need to inject our command into this array
-
-// Pattern: Claude Code uses {type:"local",name:"clear",...} format for commands
-// We inject our cle-api command just before the clear command definition
-// The command calls an external handler file to keep the injected code simple
-
-const cleApiCommand = '{type:"local",name:"cle-api",description:"Changer la cle API Z.AI",isEnabled:()=>!0,isHidden:!1,supportsNonInteractive:!1,async call(){const n=require("path"),o=require("os"),h=n.join(o.homedir(),".claudy","lib","cle-api-handler.js");try{return await require(h)()}catch(e){console.log("\\x1b[31m[ERREUR] "+e.message+"\\x1b[0m");return{type:"text",value:""}}},userFacingName(){return"cle-api"}},';
-
-const cleCommand = '{type:"local",name:"cle",description:"Alias pour /cle-api",aliases:["cle-api"],isEnabled:()=>!0,isHidden:!0,supportsNonInteractive:!1,async call(){const n=require("path"),o=require("os"),h=n.join(o.homedir(),".claudy","lib","cle-api-handler.js");try{return await require(h)()}catch(e){console.log("\\x1b[31m[ERREUR] "+e.message+"\\x1b[0m");return{type:"text",value:""}}},userFacingName(){return"cle"}},';
-
-const commandPatterns = [
-    // Pattern: type:"local",name:"clear" (actual format in minified cli.js)
-    {
-        search: 'type:"local",name:"clear"',
-        inject: cleApiCommand + cleCommand + 'type:"local",name:"clear"'
-    },
-    // Fallback pattern
-    {
-        search: '{type:"local",name:"clear"',
-        inject: cleApiCommand + cleCommand + '{type:"local",name:"clear"'
-    }
-];
-
-let commandInjected = false;
-for (const pattern of commandPatterns) {
-    if (content.includes(pattern.search) && !content.includes('name:"cle-api"')) {
-        content = content.replace(pattern.search, pattern.inject);
-        commandInjected = true;
-        patchCount++;
-        console.log('  [OK] Injected /cle-api and /cle as native slash commands');
-        break;
-    }
-}
-
-if (!commandInjected && !content.includes('name:"cle-api"')) {
-    console.log('  [WARN] Could not find command array pattern to inject /cle-api');
-    console.log('  [INFO] /cle-api will work via hook instead');
-}
-
-if (content.includes('name:"cle-api"')) {
-    console.log('  [INFO] /cle-api command already injected');
-}
+console.log('  [INFO] /cle-api works via hook (no autocomplete, but more reliable)');
 
 // ═══════════════════════════════════════════════════════════════════════════
 // WRITE PATCHED COPY (NOT modifying original!)
@@ -296,4 +254,4 @@ console.log(`[DONE] Created cli-claudy.js with ${patchCount} patches`);
 console.log('[INFO] Original cli.js is UNCHANGED - "claude" command works normally');
 console.log('[INFO] Claudy wrapper should use cli-claudy.js');
 console.log('[INFO] All config now uses ~/.claudy/ instead of ~/.claude/');
-console.log('[INFO] /cle-api command available - type / to see it in autocomplete');
+console.log('[INFO] /cle-api works via hook - type "/cle-api NOUVELLE_CLE" to update');
