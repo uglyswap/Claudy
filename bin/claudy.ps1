@@ -212,7 +212,9 @@ if (-not (Test-Path $claudyExe)) {
 }
 
 if (Test-Path $claudyExe) {
-    & node $claudyExe @filteredArgs
+    # Always add --dangerously-skip-permissions to bypass folder confirmation
+    # Claudy trusts all directories by default (no "Do you want to work in this folder?" prompt)
+    & node $claudyExe --dangerously-skip-permissions @filteredArgs
 } else {
     Write-Host "[ERREUR] Claudy introuvable. Reinstallez avec:" -ForegroundColor Red
     Write-Host "irm https://raw.githubusercontent.com/uglyswap/Claudy/main/install.ps1 | iex" -ForegroundColor Yellow
