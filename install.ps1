@@ -158,7 +158,7 @@ $claudyPs1Url = "https://raw.githubusercontent.com/uglyswap/Claudy/main/bin/clau
 $claudyPs1Path = Join-Path $claudyBinDir "claudy.ps1"
 try {
     Invoke-WebRequest -Uri $claudyPs1Url -OutFile $claudyPs1Path -UseBasicParsing
-    Write-Host "[OK] claudy.ps1 telecharge (avec validation cle API)" -ForegroundColor Green
+    Write-Host "[OK] claudy.ps1 telecharge" -ForegroundColor Green
 } catch {
     Write-Host "[WARN] Impossible de telecharger claudy.ps1" -ForegroundColor Yellow
 }
@@ -180,24 +180,6 @@ if %ERRORLEVEL% EQU 0 (
 $claudyCmdContent | Out-File -FilePath $claudyCmdPath -Encoding ascii -Force
 
 Write-Host "[OK] Wrappers Claudy crees dans ~/.claudy/bin/" -ForegroundColor Green
-
-# ============================================
-# INSTALL CLE COMMAND (STANDALONE API KEY UPDATE)
-# ============================================
-Write-Host "Installation de la commande 'cle'..." -ForegroundColor Yellow
-
-$clePs1Url = "https://raw.githubusercontent.com/uglyswap/Claudy/main/bin/cle.ps1"
-$clePs1Path = Join-Path $claudyBinDir "cle.ps1"
-$cleCmdUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/bin/cle.cmd"
-$cleCmdPath = Join-Path $claudyBinDir "cle.cmd"
-
-try {
-    Invoke-WebRequest -Uri $clePs1Url -OutFile $clePs1Path -UseBasicParsing
-    Invoke-WebRequest -Uri $cleCmdUrl -OutFile $cleCmdPath -UseBasicParsing
-    Write-Host "[OK] Commande 'cle' installee (mise a jour cle API sans appeler l'API)" -ForegroundColor Green
-} catch {
-    Write-Host "[WARN] Impossible d'installer la commande 'cle'" -ForegroundColor Yellow
-}
 
 # ============================================
 # ADD CLAUDY TO PATH
@@ -365,11 +347,6 @@ Write-Host "  - Installation isolee : ~/.claudy/lib/" -ForegroundColor Gray
 Write-Host "  - Configuration isolee : ~/.claudy/settings.json" -ForegroundColor Gray
 Write-Host "  - Binaires isoles : ~/.claudy/bin/" -ForegroundColor Gray
 Write-Host ""
-Write-Host "Actions sans impact sur Claudy :" -ForegroundColor Green
-Write-Host "  - Desinstaller Claude Code (npm uninstall -g)" -ForegroundColor Gray
-Write-Host "  - Mettre a jour Claude Code (npm update)" -ForegroundColor Gray
-Write-Host "  - Modifier ~/.claude/ (config Claude Code)" -ForegroundColor Gray
-Write-Host ""
 Write-Host "Fonctionnalites incluses :" -ForegroundColor White
 Write-Host "  - Logo CLAUDY avec degrade jaune-magenta" -ForegroundColor Magenta
 Write-Host "  - GLM 4.7 (pas besoin de compte Anthropic)" -ForegroundColor Green
@@ -382,13 +359,12 @@ Write-Host "  - AKHITHINK: Deep reasoning mode" -ForegroundColor Magenta
 Write-Host "  - Identite Claudy Focan (Dikkenek)" -ForegroundColor Magenta
 Write-Host ""
 Write-Host "Gestion de la cle API :" -ForegroundColor White
-Write-Host "  - Au demarrage: Claudy verifie la cle et demande une nouvelle si invalide" -ForegroundColor Cyan
-Write-Host "  - Commande 'cle': mise a jour manuelle (cle NOUVELLE_CLE)" -ForegroundColor Cyan
-Write-Host "  - Skill /cle-api: mise a jour via Claudy" -ForegroundColor Cyan
+Write-Host "  - Au demarrage: si cle invalide, Claudy demande une nouvelle" -ForegroundColor Cyan
+Write-Host "  - Dans Claudy: /cle-api pour changer la cle" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Structure d'installation :" -ForegroundColor Gray
 Write-Host "  ~/.claudy/" -ForegroundColor DarkGray
-Write-Host "    +-- bin/           (claudy, cle)" -ForegroundColor DarkGray
+Write-Host "    +-- bin/           (claudy)" -ForegroundColor DarkGray
 Write-Host "    +-- lib/           (node_modules isoles)" -ForegroundColor DarkGray
 Write-Host "    +-- modules/       (Claudy-Logo.psm1)" -ForegroundColor DarkGray
 Write-Host "    +-- skills/        (skills Claudy)" -ForegroundColor DarkGray
