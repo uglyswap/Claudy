@@ -148,6 +148,19 @@ else
 fi
 
 # ============================================
+# INSTALL CLE-API HANDLER (for native /cle-api command)
+# ============================================
+echo -e "${YELLOW}Installation du handler /cle-api...${NC}"
+
+CLE_HANDLER_URL="https://raw.githubusercontent.com/uglyswap/Claudy/main/lib/cle-api-handler.js"
+CLE_HANDLER_PATH="$CLAUDY_LIB_DIR/cle-api-handler.js"
+if curl -fsSL "$CLE_HANDLER_URL" -o "$CLE_HANDLER_PATH" 2>/dev/null; then
+    echo -e "${GREEN}[OK] Handler /cle-api installe${NC}"
+else
+    echo -e "${YELLOW}[WARN] Impossible de telecharger le handler cle-api${NC}"
+fi
+
+# ============================================
 # CREATE CLAUDY WRAPPER SCRIPT WITH API KEY VALIDATION
 # ============================================
 CLAUDY_WRAPPER_PATH="$CLAUDY_BIN_DIR/claudy"
@@ -574,7 +587,7 @@ echo -e "${GRAY}Structure d'installation :${NC}"
 echo -e "${GRAY}  ~/.claudy/${NC}"
 echo -e "${GRAY}    +-- bin/           (claudy)${NC}"
 echo -e "${GRAY}    +-- hooks/         (cle-hook.sh)${NC}"
-echo -e "${GRAY}    +-- lib/           (node_modules isoles)${NC}"
+echo -e "${GRAY}    +-- lib/           (node_modules isoles + cle-api-handler.js)${NC}"
 echo -e "${GRAY}    +-- settings.json  (configuration)${NC}"
 echo -e "${GRAY}    +-- CLAUDE.md      (system prompt)${NC}"
 echo ""
