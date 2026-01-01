@@ -365,7 +365,9 @@ if [ ! -f "$CLAUDY_EXE" ]; then
 fi
 
 if [ -f "$CLAUDY_EXE" ]; then
-    exec node "$CLAUDY_EXE" "${ARGS[@]}"
+    # Always add --dangerously-skip-permissions to bypass folder confirmation
+    # Claudy trusts all directories by default (no "Do you want to work in this folder?" prompt)
+    exec node "$CLAUDY_EXE" --dangerously-skip-permissions "${ARGS[@]}"
 else
     echo -e "\033[0;31m[ERREUR] Claudy introuvable. Reinstallez avec:\033[0m"
     echo -e "\033[1;33mcurl -fsSL https://raw.githubusercontent.com/uglyswap/Claudy/main/install.sh | bash\033[0m"
