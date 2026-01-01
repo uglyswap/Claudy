@@ -69,9 +69,10 @@ $claudyDir = Join-Path $env:USERPROFILE ".claudy"
 $claudyLibDir = Join-Path $claudyDir "lib"
 $claudyBinDir = Join-Path $claudyDir "bin"
 $claudyModulesDir = Join-Path $claudyDir "modules"
+$claudyHooksDir = Join-Path $claudyDir "hooks"
 
 # Create directories
-foreach ($dir in @($claudyDir, $claudyLibDir, $claudyBinDir, $claudyModulesDir)) {
+foreach ($dir in @($claudyDir, $claudyLibDir, $claudyBinDir, $claudyModulesDir, $claudyHooksDir)) {
     if (-not (Test-Path $dir)) {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
     }
@@ -146,6 +147,20 @@ try {
     Write-Host "[OK] Module Claudy-Logo installe" -ForegroundColor Green
 } catch {
     Write-Host "[WARN] Impossible de telecharger le module logo" -ForegroundColor Yellow
+}
+
+# ============================================
+# INSTALL HOOKS (for /cle-api command)
+# ============================================
+Write-Host "Installation des hooks Claudy..." -ForegroundColor Yellow
+
+$cleHookUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/hooks/cle-hook.ps1"
+$cleHookPath = Join-Path $claudyHooksDir "cle-hook.ps1"
+try {
+    Invoke-WebRequest -Uri $cleHookUrl -OutFile $cleHookPath -UseBasicParsing
+    Write-Host "[OK] Hook /cle-api installe (fonctionne SANS modele)" -ForegroundColor Magenta
+} catch {
+    Write-Host "[WARN] Impossible de telecharger le hook cle-api" -ForegroundColor Yellow
 }
 
 # ============================================
@@ -226,9 +241,17 @@ if ([string]::IsNullOrWhiteSpace($apiKey)) {
     Write-Host "       Au demarrage de Claudy, il vous demandera votre cle." -ForegroundColor Yellow
 }
 
-# Create settings.json with GLM config, MCP servers, and bypass permissions
+# Create settings.json with GLM config, MCP servers, hooks, and bypass permissions
 $settingsContent = @"
 {
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "^/(cle-api|cle)(\\s|$)",
+        "hooks": ["pwsh -NoProfile -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.claudy\\hooks\\cle-hook.ps1\""]
+      }
+    ]
+  },
   "permissionMode": "bypassPermissions",
   "confirmations": {
     "fileOperations": false,
@@ -275,6 +298,7 @@ $settingsContent = @"
 
 $settingsContent | Out-File -FilePath $settingsPath -Encoding utf8 -Force
 Write-Host "[OK] Configuration GLM 4.7 creee" -ForegroundColor Green
+Write-Host "[OK] Hook /cle-api configure" -ForegroundColor Green
 Write-Host "[OK] Mode bypass permissions active" -ForegroundColor Green
 Write-Host "[OK] Auto-updater desactive" -ForegroundColor Green
 Write-Host "[OK] 3 serveurs MCP configures" -ForegroundColor Green
@@ -289,34 +313,6 @@ try {
     Write-Host "[OK] Identite Claudy Focan configuree" -ForegroundColor Magenta
 } catch {
     Write-Host "[WARN] Impossible de telecharger CLAUDE.md" -ForegroundColor Yellow
-}
-
-# ============================================
-# INSTALL CLAUDY SKILLS
-# ============================================
-Write-Host ""
-Write-Host "Installation des skills Claudy..." -ForegroundColor Yellow
-
-# Create skills directory in ~/.claudy/skills/
-$skillsDir = Join-Path $claudyDir "skills"
-if (-not (Test-Path $skillsDir)) {
-    New-Item -ItemType Directory -Path $skillsDir -Force | Out-Null
-}
-
-# Install /cle-api skill for changing Z.AI API key
-$cleApiSkillDir = Join-Path $skillsDir "cle-api"
-if (-not (Test-Path $cleApiSkillDir)) {
-    New-Item -ItemType Directory -Path $cleApiSkillDir -Force | Out-Null
-}
-
-$cleApiSkillUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/skills/cle-api/SKILL.md"
-$cleApiSkillPath = Join-Path $cleApiSkillDir "SKILL.md"
-
-try {
-    Invoke-WebRequest -Uri $cleApiSkillUrl -OutFile $cleApiSkillPath -UseBasicParsing
-    Write-Host "[OK] Skill /cle-api installe" -ForegroundColor Magenta
-} catch {
-    Write-Host "[WARN] Impossible d'installer le skill /cle-api" -ForegroundColor Yellow
 }
 
 Write-Host ""
@@ -360,14 +356,14 @@ Write-Host "  - Identite Claudy Focan (Dikkenek)" -ForegroundColor Magenta
 Write-Host ""
 Write-Host "Gestion de la cle API :" -ForegroundColor White
 Write-Host "  - Au demarrage: si cle invalide, Claudy demande une nouvelle" -ForegroundColor Cyan
-Write-Host "  - Dans Claudy: /cle-api pour changer la cle" -ForegroundColor Cyan
+Write-Host "  - Dans Claudy: /cle-api NOUVELLE_CLE (sans modele!)" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Structure d'installation :" -ForegroundColor Gray
 Write-Host "  ~/.claudy/" -ForegroundColor DarkGray
 Write-Host "    +-- bin/           (claudy)" -ForegroundColor DarkGray
+Write-Host "    +-- hooks/         (cle-hook.ps1)" -ForegroundColor DarkGray
 Write-Host "    +-- lib/           (node_modules isoles)" -ForegroundColor DarkGray
 Write-Host "    +-- modules/       (Claudy-Logo.psm1)" -ForegroundColor DarkGray
-Write-Host "    +-- skills/        (skills Claudy)" -ForegroundColor DarkGray
 Write-Host "    +-- settings.json  (configuration)" -ForegroundColor DarkGray
 Write-Host "    +-- CLAUDE.md      (system prompt)" -ForegroundColor DarkGray
 Write-Host ""
