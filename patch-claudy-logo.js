@@ -12,7 +12,7 @@
  * - AKHITHINK detection for rainbow animation
  * - All "Claude Code" text replaced with "Claudy"
  * - All config paths changed from ~/.claude/ to ~/.claudy/
- * - Skills loaded from ~/.claudy/skills/ (not ~/.claude/skills/)
+ * - /cle-api command injected as native command (no model needed)
  */
 
 const fs = require('fs');
@@ -236,6 +236,49 @@ if (configDirOccurrences > 0) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// PATCH 8: Inject /cle-api and /cle as native slash commands
+// These commands work WITHOUT the model - pure Node.js
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Find patterns for slash command registration
+// Claude Code uses arrays like: [{name:"help",...},{name:"clear",...}]
+// We need to inject our command into this array
+
+// Pattern 1: Look for command array with "clear" command (common pattern)
+const commandPatterns = [
+    // Pattern: {name:"clear",description:...}
+    {
+        search: '{name:"clear",description:',
+        inject: '{name:"cle-api",description:"Changer la cle API Z.AI",userFacingName:"/cle-api",isEnabled:()=>!0,isHidden:!1,argNames:[],run:async()=>{const e=require("readline"),t=require("fs"),n=require("path"),r=require("os"),i=n.join(r.homedir(),".claudy","settings.json");console.log(""),console.log("\\x1b[36m========================================\\x1b[0m"),console.log("\\x1b[36m   MISE A JOUR CLE API Z.AI            \\x1b[0m"),console.log("\\x1b[36m========================================\\x1b[0m"),console.log("");const o=e.createInterface({input:process.stdin,output:process.stdout});return new Promise(e=>{o.question("\\x1b[33mRenseignez votre nouvelle cle API Z.AI:\\x1b[0m ",n=>{if(o.close(),!n||!n.trim())return console.log("\\x1b[31m[ERREUR] La cle ne peut pas etre vide.\\x1b[0m"),void e();const s=n.trim();try{const e=t.readFileSync(i,"utf8"),n=JSON.parse(e),o=n.env&&n.env.ANTHROPIC_AUTH_TOKEN;if(!o)return console.log("\\x1b[31m[ERREUR] Ancienne cle non trouvee.\\x1b[0m"),void e();const a=(e.match(new RegExp(o.replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\$&"),"g"))||[]).length,l=e.split(o).join(s);t.writeFileSync(i,l,"utf8");const c=o.length>10?o.substring(0,6)+"..."+o.substring(o.length-4):"***",u=s.length>10?s.substring(0,6)+"..."+s.substring(s.length-4):"***";console.log(""),console.log("\\x1b[32m========================================\\x1b[0m"),console.log("\\x1b[32m   CLE API Z.AI MISE A JOUR            \\x1b[0m"),console.log("\\x1b[32m========================================\\x1b[0m"),console.log(""),console.log("\\x1b[90mAncienne: "+c+"\\x1b[0m"),console.log("\\x1b[37mNouvelle: "+u+"\\x1b[0m"),console.log(""),console.log("\\x1b[32m- ANTHROPIC_AUTH_TOKEN: OK\\x1b[0m"),console.log("\\x1b[32m- Z_AI_API_KEY (vision): OK\\x1b[0m"),console.log("\\x1b[32m- Authorization web-search-prime: OK\\x1b[0m"),console.log("\\x1b[32m- Authorization web-reader: OK\\x1b[0m"),console.log(""),console.log("\\x1b[36m"+a+" occurrence(s) remplacee(s)\\x1b[0m"),console.log(""),console.log("\\x1b[33mRedemarrez Claudy pour appliquer.\\x1b[0m"),console.log("")}catch(e){console.log("\\x1b[31m[ERREUR] "+e.message+"\\x1b[0m")}e()})})}},{name:"cle",description:"Alias pour /cle-api",userFacingName:"/cle",isEnabled:()=>!0,isHidden:!1,argNames:[],run:async()=>{const e=require("readline"),t=require("fs"),n=require("path"),r=require("os"),i=n.join(r.homedir(),".claudy","settings.json");console.log(""),console.log("\\x1b[36m========================================\\x1b[0m"),console.log("\\x1b[36m   MISE A JOUR CLE API Z.AI            \\x1b[0m"),console.log("\\x1b[36m========================================\\x1b[0m"),console.log("");const o=e.createInterface({input:process.stdin,output:process.stdout});return new Promise(e=>{o.question("\\x1b[33mRenseignez votre nouvelle cle API Z.AI:\\x1b[0m ",n=>{if(o.close(),!n||!n.trim())return console.log("\\x1b[31m[ERREUR] La cle ne peut pas etre vide.\\x1b[0m"),void e();const s=n.trim();try{const e=t.readFileSync(i,"utf8"),n=JSON.parse(e),o=n.env&&n.env.ANTHROPIC_AUTH_TOKEN;if(!o)return console.log("\\x1b[31m[ERREUR] Ancienne cle non trouvee.\\x1b[0m"),void e();const a=(e.match(new RegExp(o.replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\$&"),"g"))||[]).length,l=e.split(o).join(s);t.writeFileSync(i,l,"utf8");const c=o.length>10?o.substring(0,6)+"..."+o.substring(o.length-4):"***",u=s.length>10?s.substring(0,6)+"..."+s.substring(s.length-4):"***";console.log(""),console.log("\\x1b[32m========================================\\x1b[0m"),console.log("\\x1b[32m   CLE API Z.AI MISE A JOUR            \\x1b[0m"),console.log("\\x1b[32m========================================\\x1b[0m"),console.log(""),console.log("\\x1b[90mAncienne: "+c+"\\x1b[0m"),console.log("\\x1b[37mNouvelle: "+u+"\\x1b[0m"),console.log(""),console.log("\\x1b[32m- ANTHROPIC_AUTH_TOKEN: OK\\x1b[0m"),console.log("\\x1b[32m- Z_AI_API_KEY (vision): OK\\x1b[0m"),console.log("\\x1b[32m- Authorization web-search-prime: OK\\x1b[0m"),console.log("\\x1b[32m- Authorization web-reader: OK\\x1b[0m"),console.log(""),console.log("\\x1b[36m"+a+" occurrence(s) remplacee(s)\\x1b[0m"),console.log(""),console.log("\\x1b[33mRedemarrez Claudy pour appliquer.\\x1b[0m"),console.log("")}catch(e){console.log("\\x1b[31m[ERREUR] "+e.message+"\\x1b[0m")}e()})})}},{name:"clear",description:'
+    },
+    // Pattern: name:"compact"
+    {
+        search: '{name:"compact",description:',
+        inject: '{name:"cle-api",description:"Changer la cle API Z.AI",userFacingName:"/cle-api",isEnabled:()=>!0,isHidden:!1,argNames:[],run:async()=>{const e=require("readline"),t=require("fs"),n=require("path"),r=require("os"),i=n.join(r.homedir(),".claudy","settings.json");console.log(""),console.log("\\x1b[36m========================================\\x1b[0m"),console.log("\\x1b[36m   MISE A JOUR CLE API Z.AI            \\x1b[0m"),console.log("\\x1b[36m========================================\\x1b[0m"),console.log("");const o=e.createInterface({input:process.stdin,output:process.stdout});return new Promise(e=>{o.question("\\x1b[33mRenseignez votre nouvelle cle API Z.AI:\\x1b[0m ",n=>{if(o.close(),!n||!n.trim())return console.log("\\x1b[31m[ERREUR] La cle ne peut pas etre vide.\\x1b[0m"),void e();const s=n.trim();try{const e=t.readFileSync(i,"utf8"),n=JSON.parse(e),o=n.env&&n.env.ANTHROPIC_AUTH_TOKEN;if(!o)return console.log("\\x1b[31m[ERREUR] Ancienne cle non trouvee.\\x1b[0m"),void e();const a=(e.match(new RegExp(o.replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\$&"),"g"))||[]).length,l=e.split(o).join(s);t.writeFileSync(i,l,"utf8");const c=o.length>10?o.substring(0,6)+"..."+o.substring(o.length-4):"***",u=s.length>10?s.substring(0,6)+"..."+s.substring(s.length-4):"***";console.log(""),console.log("\\x1b[32m========================================\\x1b[0m"),console.log("\\x1b[32m   CLE API Z.AI MISE A JOUR            \\x1b[0m"),console.log("\\x1b[32m========================================\\x1b[0m"),console.log(""),console.log("\\x1b[90mAncienne: "+c+"\\x1b[0m"),console.log("\\x1b[37mNouvelle: "+u+"\\x1b[0m"),console.log(""),console.log("\\x1b[32m- ANTHROPIC_AUTH_TOKEN: OK\\x1b[0m"),console.log("\\x1b[32m- Z_AI_API_KEY (vision): OK\\x1b[0m"),console.log("\\x1b[32m- Authorization web-search-prime: OK\\x1b[0m"),console.log("\\x1b[32m- Authorization web-reader: OK\\x1b[0m"),console.log(""),console.log("\\x1b[36m"+a+" occurrence(s) remplacee(s)\\x1b[0m"),console.log(""),console.log("\\x1b[33mRedemarrez Claudy pour appliquer.\\x1b[0m"),console.log("")}catch(e){console.log("\\x1b[31m[ERREUR] "+e.message+"\\x1b[0m")}e()})})}},{name:"cle",description:"Alias pour /cle-api",userFacingName:"/cle",isEnabled:()=>!0,isHidden:!1,argNames:[],run:async()=>{const e=require("readline"),t=require("fs"),n=require("path"),r=require("os"),i=n.join(r.homedir(),".claudy","settings.json");console.log(""),console.log("\\x1b[36m========================================\\x1b[0m"),console.log("\\x1b[36m   MISE A JOUR CLE API Z.AI            \\x1b[0m"),console.log("\\x1b[36m========================================\\x1b[0m"),console.log("");const o=e.createInterface({input:process.stdin,output:process.stdout});return new Promise(e=>{o.question("\\x1b[33mRenseignez votre nouvelle cle API Z.AI:\\x1b[0m ",n=>{if(o.close(),!n||!n.trim())return console.log("\\x1b[31m[ERREUR] La cle ne peut pas etre vide.\\x1b[0m"),void e();const s=n.trim();try{const e=t.readFileSync(i,"utf8"),n=JSON.parse(e),o=n.env&&n.env.ANTHROPIC_AUTH_TOKEN;if(!o)return console.log("\\x1b[31m[ERREUR] Ancienne cle non trouvee.\\x1b[0m"),void e();const a=(e.match(new RegExp(o.replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\$&"),"g"))||[]).length,l=e.split(o).join(s);t.writeFileSync(i,l,"utf8");const c=o.length>10?o.substring(0,6)+"..."+o.substring(o.length-4):"***",u=s.length>10?s.substring(0,6)+"..."+s.substring(s.length-4):"***";console.log(""),console.log("\\x1b[32m========================================\\x1b[0m"),console.log("\\x1b[32m   CLE API Z.AI MISE A JOUR            \\x1b[0m"),console.log("\\x1b[32m========================================\\x1b[0m"),console.log(""),console.log("\\x1b[90mAncienne: "+c+"\\x1b[0m"),console.log("\\x1b[37mNouvelle: "+u+"\\x1b[0m"),console.log(""),console.log("\\x1b[32m- ANTHROPIC_AUTH_TOKEN: OK\\x1b[0m"),console.log("\\x1b[32m- Z_AI_API_KEY (vision): OK\\x1b[0m"),console.log("\\x1b[32m- Authorization web-search-prime: OK\\x1b[0m"),console.log("\\x1b[32m- Authorization web-reader: OK\\x1b[0m"),console.log(""),console.log("\\x1b[36m"+a+" occurrence(s) remplacee(s)\\x1b[0m"),console.log(""),console.log("\\x1b[33mRedemarrez Claudy pour appliquer.\\x1b[0m"),console.log("")}catch(e){console.log("\\x1b[31m[ERREUR] "+e.message+"\\x1b[0m")}e()})})}},{name:"compact",description:'
+    }
+];
+
+let commandInjected = false;
+for (const pattern of commandPatterns) {
+    if (content.includes(pattern.search) && !content.includes('name:"cle-api"')) {
+        content = content.replace(pattern.search, pattern.inject);
+        commandInjected = true;
+        patchCount++;
+        console.log('  [OK] Injected /cle-api and /cle as native slash commands');
+        break;
+    }
+}
+
+if (!commandInjected && !content.includes('name:"cle-api"')) {
+    console.log('  [WARN] Could not find command array pattern to inject /cle-api');
+    console.log('  [INFO] /cle-api will work via hook instead');
+}
+
+if (content.includes('name:"cle-api"')) {
+    console.log('  [INFO] /cle-api command already injected');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // WRITE PATCHED COPY (NOT modifying original!)
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -246,4 +289,4 @@ console.log(`[DONE] Created cli-claudy.js with ${patchCount} patches`);
 console.log('[INFO] Original cli.js is UNCHANGED - "claude" command works normally');
 console.log('[INFO] Claudy wrapper should use cli-claudy.js');
 console.log('[INFO] All config now uses ~/.claudy/ instead of ~/.claude/');
-console.log('[INFO] User skills should be placed in ~/.claudy/skills/<skill-name>/SKILL.md');
+console.log('[INFO] /cle-api command available - type / to see it in autocomplete');
