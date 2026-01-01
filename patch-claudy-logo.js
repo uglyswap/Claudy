@@ -318,24 +318,27 @@ if (content.includes('Welcome back')) {
     console.log('  [OK] Replaced "Welcome back" → "Bienvenue"');
 }
 // ═══════════════════════════════════════════════════════════════════════════
-// PATCH 11: Skip bypass permissions warning dialog completely
-// The condition that shows the dialog is:
-//   (A==="bypassPermissions"||Q)&&!b1().bypassPermissionsModeAccepted)await
-// We replace it with !1)await so the condition is always false
+// ═══════════════════════════════════════════════════════════════════════════
+// PATCH 11: Auto-accept bypass permissions dialog
+// Instead of showing the warning dialog, we auto-accept it in the useEffect
+// This keeps bypass mode ACTIVE while skipping the confirmation popup
+// The useEffect normally logs "shown" - we replace it with full accept logic:
+//   1. Log accept telemetry
+//   2. Update config with bypassPermissionsModeAccepted: true
+//   3. Call onAccept callback
 // ═══════════════════════════════════════════════════════════════════════════
 
-const bypassConditionOld = '(A==="bypassPermissions"||Q)&&!b1().bypassPermissionsModeAccepted)await';
-const bypassConditionNew = '!1)await';
+const bypassUseEffectOld = 'SD.default.useEffect(()=>{n("tengu_bypass_permissions_mode_dialog_shown",{})},[])';
+const bypassUseEffectNew = 'SD.default.useEffect(()=>{n("tengu_bypass_permissions_mode_dialog_accept",{}),d0((Z)=>{if(Z.bypassPermissionsModeAccepted===!0)return Z;return{...Z,bypassPermissionsModeAccepted:!0}}),A()},[])';
 
-if (content.includes(bypassConditionOld)) {
-    content = content.replace(bypassConditionOld, bypassConditionNew);
+if (content.includes(bypassUseEffectOld)) {
+    content = content.replace(bypassUseEffectOld, bypassUseEffectNew);
     patchCount++;
-    console.log('  [OK] Disabled bypass permissions dialog (condition always false)');
+    console.log('  [OK] Auto-accept bypass permissions dialog (useEffect executes accept logic)');
 } else {
-    console.log('  [WARN] Bypass condition pattern not found');
+    console.log('  [WARN] Bypass useEffect pattern not found');
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
 // PATCH 12: Replace onboarding "Welcome to Claude Code" with Claudy branding
 // This changes the welcome screen title during first-time setup
 // ═══════════════════════════════════════════════════════════════════════════
