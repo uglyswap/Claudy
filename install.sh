@@ -466,14 +466,14 @@ if [ -z "$API_KEY" ]; then
     echo -e "${YELLOW}       Au demarrage de Claudy, il vous demandera votre cle.${NC}"
 fi
 
-# Create settings.json with GLM config, MCP servers, hooks, bypass permissions, and disabled auto-updater
+# Create settings.json with GLM config, MCP servers, hooks (new format), bypass permissions, and disabled auto-updater
 cat > "$SETTINGS_PATH" << EOF
 {
   "hooks": {
     "UserPromptSubmit": [
       {
         "matcher": "^/(cle-api|cle)(\\\\s|\$)",
-        "hooks": ["bash \"\$HOME/.claudy/hooks/cle-hook.sh\""]
+        "hooks": [{"type": "command", "command": "bash \"\$HOME/.claudy/hooks/cle-hook.sh\""}]
       }
     ]
   },
