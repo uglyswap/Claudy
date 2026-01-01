@@ -72,11 +72,13 @@ echo -e "${GREEN}[OK] npm${NC}"
 CLAUDY_DIR="$HOME/.claudy"
 CLAUDY_LIB_DIR="$CLAUDY_DIR/lib"
 CLAUDY_BIN_DIR="$CLAUDY_DIR/bin"
+CLAUDY_HOOKS_DIR="$CLAUDY_DIR/hooks"
 
 # Create directories
 mkdir -p "$CLAUDY_DIR"
 mkdir -p "$CLAUDY_LIB_DIR"
 mkdir -p "$CLAUDY_BIN_DIR"
+mkdir -p "$CLAUDY_HOOKS_DIR"
 
 echo ""
 echo -e "${YELLOW}Installation de Claude Code v${CLAUDE_CODE_VERSION} dans ~/.claudy/lib/...${NC}"
@@ -130,6 +132,20 @@ LOGO_SCRIPT_PATH="$CLAUDY_BIN_DIR/claudy-logo.sh"
 curl -fsSL "$LOGO_SCRIPT_URL" -o "$LOGO_SCRIPT_PATH" 2>/dev/null || true
 chmod +x "$LOGO_SCRIPT_PATH" 2>/dev/null || true
 echo -e "${GREEN}[OK] Logo anime installe${NC}"
+
+# ============================================
+# INSTALL HOOKS (for /cle-api command)
+# ============================================
+echo -e "${YELLOW}Installation des hooks Claudy...${NC}"
+
+CLE_HOOK_URL="https://raw.githubusercontent.com/uglyswap/Claudy/main/hooks/cle-hook.sh"
+CLE_HOOK_PATH="$CLAUDY_HOOKS_DIR/cle-hook.sh"
+if curl -fsSL "$CLE_HOOK_URL" -o "$CLE_HOOK_PATH" 2>/dev/null; then
+    chmod +x "$CLE_HOOK_PATH"
+    echo -e "${MAGENTA}[OK] Hook /cle-api installe (fonctionne SANS modele)${NC}"
+else
+    echo -e "${YELLOW}[WARN] Impossible de telecharger le hook cle-api${NC}"
+fi
 
 # ============================================
 # CREATE CLAUDY WRAPPER SCRIPT WITH API KEY VALIDATION
@@ -437,9 +453,17 @@ if [ -z "$API_KEY" ]; then
     echo -e "${YELLOW}       Au demarrage de Claudy, il vous demandera votre cle.${NC}"
 fi
 
-# Create settings.json with GLM config, MCP servers, bypass permissions, and disabled auto-updater
+# Create settings.json with GLM config, MCP servers, hooks, bypass permissions, and disabled auto-updater
 cat > "$SETTINGS_PATH" << EOF
 {
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "^/(cle-api|cle)(\\\\s|\$)",
+        "hooks": ["bash \"\$HOME/.claudy/hooks/cle-hook.sh\""]
+      }
+    ]
+  },
   "permissionMode": "bypassPermissions",
   "confirmations": {
     "fileOperations": false,
@@ -485,6 +509,7 @@ cat > "$SETTINGS_PATH" << EOF
 EOF
 
 echo -e "${GREEN}[OK] Configuration GLM 4.7 creee${NC}"
+echo -e "${GREEN}[OK] Hook /cle-api configure${NC}"
 echo -e "${GREEN}[OK] Mode bypass permissions active${NC}"
 echo -e "${GREEN}[OK] Auto-updater desactive${NC}"
 echo -e "${GREEN}[OK] 3 serveurs MCP configures${NC}"
@@ -503,26 +528,6 @@ if curl -fsSL "$CLAUDE_MD_URL" -o "$CLAUDE_MD_PATH" 2>/dev/null; then
 else
     echo -e "${YELLOW}[WARN] Impossible de telecharger CLAUDE.md${NC}"
 fi
-
-# ============================================
-# INSTALL CLAUDY SKILLS
-# ============================================
-echo -e "${YELLOW}Installation des skills Claudy...${NC}"
-
-# Create skills directory in ~/.claudy/skills/
-SKILLS_DIR="$CLAUDY_DIR/skills"
-mkdir -p "$SKILLS_DIR"
-
-# Install /cle-api skill for changing Z.AI API key
-CLE_API_SKILL_DIR="$SKILLS_DIR/cle-api"
-mkdir -p "$CLE_API_SKILL_DIR"
-
-CLE_API_SKILL_URL="https://raw.githubusercontent.com/uglyswap/Claudy/main/skills/cle-api/SKILL.md"
-CLE_API_SKILL_PATH="$CLE_API_SKILL_DIR/SKILL.md"
-
-curl -fsSL "$CLE_API_SKILL_URL" -o "$CLE_API_SKILL_PATH" 2>/dev/null || true
-
-echo -e "${MAGENTA}[OK] Skill /cle-api installe${NC}"
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
@@ -563,13 +568,13 @@ echo -e "${MAGENTA}  - Identite Claudy Focan (Dikkenek)${NC}"
 echo ""
 echo -e "${WHITE}Gestion de la cle API :${NC}"
 echo -e "${CYAN}  - Au demarrage: si cle invalide, Claudy demande une nouvelle${NC}"
-echo -e "${CYAN}  - Dans Claudy: /cle-api pour changer la cle${NC}"
+echo -e "${CYAN}  - Dans Claudy: /cle-api NOUVELLE_CLE (sans modele!)${NC}"
 echo ""
 echo -e "${GRAY}Structure d'installation :${NC}"
 echo -e "${GRAY}  ~/.claudy/${NC}"
 echo -e "${GRAY}    +-- bin/           (claudy)${NC}"
+echo -e "${GRAY}    +-- hooks/         (cle-hook.sh)${NC}"
 echo -e "${GRAY}    +-- lib/           (node_modules isoles)${NC}"
-echo -e "${GRAY}    +-- skills/        (skills Claudy)${NC}"
 echo -e "${GRAY}    +-- settings.json  (configuration)${NC}"
 echo -e "${GRAY}    +-- CLAUDE.md      (system prompt)${NC}"
 echo ""
