@@ -1,6 +1,7 @@
 ---
 name: cle-api
 description: Met a jour la cle API Z.AI dans tous les emplacements (modele principal, vision IA, recherche web, lecture web). Utiliser quand l'utilisateur veut changer sa cle API Z.AI avec /cle-api ou /cle.
+user-invocable: true
 ---
 
 # Skill: Mise a jour de la cle API Z.AI
