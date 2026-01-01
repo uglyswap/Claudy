@@ -33,7 +33,7 @@ if ($showLogo -and (Test-Path $modulePath)) {
 }
 
 # ============================================
-# API KEY VALIDATION AT STARTUP
+# API KEY VALIDATION AT STARTUP (SILENT)
 # ============================================
 
 function Test-ZaiApiKey {
@@ -118,7 +118,7 @@ if (Test-Path $settingsPath) {
     }
 }
 
-# Check if API key exists and is valid
+# Check if API key exists and is valid (SILENT - no message)
 $keyNeedsUpdate = $false
 $updateReason = ""
 
@@ -129,8 +129,7 @@ if (-not $apiKey) {
     $keyNeedsUpdate = $true
     $updateReason = "Cle API placeholder detectee"
 } else {
-    # Test the API key
-    Write-Host "Verification de la cle API..." -ForegroundColor Gray
+    # Test the API key silently
     $keyValid = Test-ZaiApiKey -Key $apiKey
     if (-not $keyValid) {
         $keyNeedsUpdate = $true
@@ -154,13 +153,7 @@ if ($keyNeedsUpdate) {
 
         if ($success) {
             Write-Host ""
-            Write-Host "Mise a jour de la cle API Z.AI..." -ForegroundColor Yellow
-            Write-Host "- ANTHROPIC_AUTH_TOKEN: OK" -ForegroundColor Green
-            Write-Host "- Z_AI_API_KEY (vision): OK" -ForegroundColor Green
-            Write-Host "- Authorization web-search-prime: OK" -ForegroundColor Green
-            Write-Host "- Authorization web-reader: OK" -ForegroundColor Green
-            Write-Host ""
-            Write-Host "[OK] Cle API mise a jour avec succes!" -ForegroundColor Green
+            Write-Host "[OK] Cle API mise a jour dans les 4 emplacements" -ForegroundColor Green
             Write-Host ""
 
             # Update apiKey variable for env export
