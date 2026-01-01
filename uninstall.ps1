@@ -93,7 +93,8 @@ if ($claudyExists) {
         Remove-Item -Path $claudyDir -Recurse -Force -ErrorAction Stop
         Write-Host "[OK] Dossier ~/.claudy/ supprime" -ForegroundColor Green
     } catch {
-        $errors += "Impossible de supprimer ~/.claudy/: $_"
+        $errMsg = $_.Exception.Message
+        $errors += "Impossible de supprimer ~/.claudy/ - $errMsg"
         Write-Host "[ERREUR] Impossible de supprimer ~/.claudy/" -ForegroundColor Red
         Write-Host "         Fermez Claudy s'il est en cours d'execution" -ForegroundColor Gray
     }
@@ -108,7 +109,8 @@ foreach ($wrapper in $wrappers) {
             Remove-Item -Path $wrapperPath -Force -ErrorAction Stop
             Write-Host "[OK] Wrapper $wrapper supprime" -ForegroundColor Green
         } catch {
-            $errors += "Impossible de supprimer $wrapper: $_"
+            $errMsg = $_.Exception.Message
+            $errors += "Impossible de supprimer $wrapper - $errMsg"
             Write-Host "[ERREUR] Impossible de supprimer $wrapper" -ForegroundColor Red
         }
     }
@@ -122,7 +124,8 @@ if ($claudyInPath) {
         [Environment]::SetEnvironmentVariable("PATH", $newPath, "User")
         Write-Host "[OK] ~/.claudy/bin retire du PATH" -ForegroundColor Green
     } catch {
-        $errors += "Impossible de modifier le PATH: $_"
+        $errMsg = $_.Exception.Message
+        $errors += "Impossible de modifier le PATH - $errMsg"
         Write-Host "[ERREUR] Impossible de modifier le PATH" -ForegroundColor Red
     }
 }
