@@ -13,6 +13,7 @@
  * - All "Claude Code" text replaced with "Claudy"
  * - All config paths changed from ~/.claude/ to ~/.claudy/
  * - /cle-api command injected as native command (no model needed)
+ * - Force compact mode for home screen (large logo fits better)
  */
 
 const fs = require('fs');
@@ -288,6 +289,33 @@ if (content.includes('name:"cle-api"')) {
 if (!commandInjected) {
     console.log('  [WARN] No commands array pattern found');
     console.log('  [INFO] /cle-api will work via skill instead (no autocomplete)');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PATCH 9: Force compact mode for home screen (Claudy logo is too wide for horizontal)
+// The function cr2(A) returns "horizontal" if terminal >= 70 columns, "compact" otherwise
+// For Claudy, we always use compact to avoid breaking the large ASCII logo
+// ═══════════════════════════════════════════════════════════════════════════
+
+const homeLayoutOld = 'function cr2(A){if(A>=70)return"horizontal";return"compact"}';
+const homeLayoutNew = 'function cr2(A){return"compact"}';
+
+if (content.includes(homeLayoutOld)) {
+    content = content.replace(homeLayoutOld, homeLayoutNew);
+    patchCount++;
+    console.log('  [OK] Forced compact mode for home screen (Claudy logo fits better)');
+} else {
+    console.log('  [WARN] Home layout function cr2 not found - may use different pattern');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PATCH 10: Replace "Welcome back" with "Bienvenue" for Claudy branding
+// ═══════════════════════════════════════════════════════════════════════════
+
+if (content.includes('Welcome back')) {
+    content = content.split('Welcome back').join('Bienvenue');
+    patchCount++;
+    console.log('  [OK] Replaced "Welcome back" → "Bienvenue"');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
