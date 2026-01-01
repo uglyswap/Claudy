@@ -157,6 +157,35 @@ C'est tout !
 
 ---
 
+## Désinstallation
+
+### Windows - PowerShell
+
+```powershell
+irm https://raw.githubusercontent.com/uglyswap/Claudy/main/uninstall.ps1 | iex
+```
+
+### Windows - CMD
+
+```cmd
+curl -fsSL https://raw.githubusercontent.com/uglyswap/Claudy/main/uninstall.ps1 -o %TEMP%\uninstall.ps1 && powershell -ExecutionPolicy Bypass -File %TEMP%\uninstall.ps1
+```
+
+### Mac / Linux
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/uglyswap/Claudy/main/uninstall.sh | bash
+```
+
+Le désinstallateur supprime :
+- ✅ Le dossier `~/.claudy/` (lib, bin, config, etc.)
+- ✅ Les wrappers npm (`claudy.cmd`, `claudy.ps1`)
+- ✅ L'entrée PATH pour `~/.claudy/bin`
+
+**Claude Code n'est PAS touché** - seul Claudy est désinstallé.
+
+---
+
 ## Architecture d'installation
 
 ### Comparaison Claudy vs Claude Code
@@ -262,30 +291,12 @@ Sur Mac/Linux :
 echo $PATH | tr ':' '\n' | grep claudy
 ```
 
-### Comment désinstaller Claudy ?
-
-C'est simple - supprimez juste le dossier `~/.claudy/` :
-
-**Mac/Linux :**
-```bash
-rm -rf ~/.claudy
-# Optionnel: retirer la ligne PATH de votre .bashrc/.zshrc
-```
-
-**Windows (PowerShell) :**
-```powershell
-Remove-Item -Recurse -Force $env:USERPROFILE\.claudy
-# Optionnel: retirer ~/.claudy/bin du PATH utilisateur
-```
-
-**Note** : Cela n'affecte PAS Claude Code CLI car Claudy est entièrement isolé.
-
 ### Comment tout désinstaller (Claudy + Claude Code) ?
 
 Si vous voulez tout supprimer :
 ```bash
 # Supprimer Claudy (installation isolée)
-rm -rf ~/.claudy
+curl -fsSL https://raw.githubusercontent.com/uglyswap/Claudy/main/uninstall.sh | bash
 
 # Supprimer Claude Code CLI (installation npm globale)
 npm uninstall -g @anthropic-ai/claude-code
