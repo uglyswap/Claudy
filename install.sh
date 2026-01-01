@@ -8,6 +8,7 @@
 # - Uninstalling Claude Code does NOT affect Claudy
 # - Updating Claude Code does NOT affect Claudy
 # - Both programs are 100% independent
+# - claudy uses cli-claudy.js, claude uses cli.js
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/uglyswap/Claudy/main/install.sh | bash
@@ -120,7 +121,7 @@ if curl -fsSL "$PATCH_SCRIPT_URL" -o "$PATCH_SCRIPT_PATH" 2>/dev/null; then
     # Pass the local installation path as argument
     node "$PATCH_SCRIPT_PATH" "$CLAUDY_LIB_DIR" 2>&1 || true
     rm -f "$PATCH_SCRIPT_PATH"
-    echo -e "${MAGENTA}[OK] Logo CLAUDY avec degrade installe${NC}"
+    echo -e "${MAGENTA}[OK] cli-claudy.js cree avec logo CLAUDY${NC}"
 else
     echo -e "${YELLOW}[WARN] Impossible de telecharger le patch logo${NC}"
 fi
@@ -134,33 +135,6 @@ chmod +x "$LOGO_SCRIPT_PATH" 2>/dev/null || true
 echo -e "${GREEN}[OK] Logo anime installe${NC}"
 
 # ============================================
-# INSTALL HOOKS (for /cle-api command)
-# ============================================
-echo -e "${YELLOW}Installation des hooks Claudy...${NC}"
-
-CLE_HOOK_URL="https://raw.githubusercontent.com/uglyswap/Claudy/main/hooks/cle-hook.sh"
-CLE_HOOK_PATH="$CLAUDY_HOOKS_DIR/cle-hook.sh"
-if curl -fsSL "$CLE_HOOK_URL" -o "$CLE_HOOK_PATH" 2>/dev/null; then
-    chmod +x "$CLE_HOOK_PATH"
-    echo -e "${MAGENTA}[OK] Hook /cle-api installe (fonctionne SANS modele)${NC}"
-else
-    echo -e "${YELLOW}[WARN] Impossible de telecharger le hook cle-api${NC}"
-fi
-
-# ============================================
-# INSTALL CLE-API HANDLER (for native /cle-api command)
-# ============================================
-echo -e "${YELLOW}Installation du handler /cle-api...${NC}"
-
-CLE_HANDLER_URL="https://raw.githubusercontent.com/uglyswap/Claudy/main/lib/cle-api-handler.js"
-CLE_HANDLER_PATH="$CLAUDY_LIB_DIR/cle-api-handler.js"
-if curl -fsSL "$CLE_HANDLER_URL" -o "$CLE_HANDLER_PATH" 2>/dev/null; then
-    echo -e "${GREEN}[OK] Handler /cle-api installe${NC}"
-else
-    echo -e "${YELLOW}[WARN] Impossible de telecharger le handler cle-api${NC}"
-fi
-
-# ============================================
 # CREATE CLAUDY WRAPPER SCRIPT WITH API KEY VALIDATION
 # ============================================
 CLAUDY_WRAPPER_PATH="$CLAUDY_BIN_DIR/claudy"
@@ -169,6 +143,8 @@ cat > "$CLAUDY_WRAPPER_PATH" << 'WRAPPER'
 # Claudy - Independent installation wrapper
 # Uses ~/.claudy/ for EVERYTHING (config + code)
 # Completely independent from Claude Code CLI
+# - claudy uses cli-claudy.js (patched)
+# - claude uses cli.js (original)
 
 # Set terminal title to "claudy"
 echo -ne "\033]0;claudy\007"
@@ -360,7 +336,7 @@ fi
 # Set config dir
 export CLAUDE_CONFIG_DIR="$HOME/.claudy"
 
-# Path to our isolated cli-claudy.js
+# Path to our isolated cli-claudy.js (PATCHED version)
 CLAUDY_EXE="$CLAUDY_LIB_DIR/node_modules/@anthropic-ai/claude-code/cli-claudy.js"
 
 # AUTO-REPAIR: If cli-claudy.js doesn't exist, recreate it
@@ -466,17 +442,10 @@ if [ -z "$API_KEY" ]; then
     echo -e "${YELLOW}       Au demarrage de Claudy, il vous demandera votre cle.${NC}"
 fi
 
-# Create settings.json with GLM config, MCP servers, hooks (new format), bypass permissions, and disabled auto-updater
+# Create settings.json with GLM config, MCP servers, bypass permissions
+# NOTE: No hooks - /cle-api is now a native command injected in cli-claudy.js
 cat > "$SETTINGS_PATH" << EOF
 {
-  "hooks": {
-    "UserPromptSubmit": [
-      {
-        "matcher": "^/(cle-api|cle)(\\\\s|\$)",
-        "hooks": [{"type": "command", "command": "bash \"\$HOME/.claudy/hooks/cle-hook.sh\""}]
-      }
-    ]
-  },
   "permissionMode": "bypassPermissions",
   "confirmations": {
     "fileOperations": false,
@@ -522,7 +491,6 @@ cat > "$SETTINGS_PATH" << EOF
 EOF
 
 echo -e "${GREEN}[OK] Configuration GLM 4.7 creee${NC}"
-echo -e "${GREEN}[OK] Hook /cle-api configure${NC}"
 echo -e "${GREEN}[OK] Mode bypass permissions active${NC}"
 echo -e "${GREEN}[OK] Auto-updater desactive${NC}"
 echo -e "${GREEN}[OK] 3 serveurs MCP configures${NC}"
@@ -565,10 +533,16 @@ echo -e "${CYAN}========================================${NC}"
 echo ""
 echo -e "${WHITE}Claudy est 100% independant de Claude Code :${NC}"
 echo -e "${GRAY}  - Installation isolee : ~/.claudy/lib/${NC}"
+echo -e "${GRAY}  - CLI patche : cli-claudy.js (pas cli.js)${NC}"
 echo -e "${GRAY}  - Configuration isolee : ~/.claudy/settings.json${NC}"
 echo -e "${GRAY}  - Binaires isoles : ~/.claudy/bin/${NC}"
 echo ""
-echo -e "${WHITE}Fonctionnalites incluses :${NC}"
+echo -e "${WHITE}Claude Code (officiel) reste intact :${NC}"
+echo -e "${GRAY}  - Commande 'claude' inchangee${NC}"
+echo -e "${GRAY}  - Utilise ~/.claude/ (pas ~/.claudy/)${NC}"
+echo -e "${GRAY}  - Aucune modification de cli.js${NC}"
+echo ""
+echo -e "${WHITE}Fonctionnalites Claudy :${NC}"
 echo -e "${MAGENTA}  - Logo CLAUDY avec degrade jaune-magenta${NC}"
 echo -e "${GREEN}  - GLM 4.7 (pas besoin de compte Anthropic)${NC}"
 echo -e "${GREEN}  - Vision IA (images, videos, OCR)${NC}"
@@ -578,16 +552,12 @@ echo -e "${GREEN}  - Mode sans permissions (pas de confirmations)${NC}"
 echo -e "${GREEN}  - Version figee ${CLAUDE_CODE_VERSION} (pas de mises a jour auto)${NC}"
 echo -e "${MAGENTA}  - AKHITHINK: Deep reasoning mode${NC}"
 echo -e "${MAGENTA}  - Identite Claudy Focan (Dikkenek)${NC}"
-echo ""
-echo -e "${WHITE}Gestion de la cle API :${NC}"
-echo -e "${CYAN}  - Au demarrage: si cle invalide, Claudy demande une nouvelle${NC}"
-echo -e "${CYAN}  - Dans Claudy: /cle-api NOUVELLE_CLE (sans modele!)${NC}"
+echo -e "${CYAN}  - /cle-api: Changer la cle API (natif, sans modele)${NC}"
 echo ""
 echo -e "${GRAY}Structure d'installation :${NC}"
 echo -e "${GRAY}  ~/.claudy/${NC}"
 echo -e "${GRAY}    +-- bin/           (claudy)${NC}"
-echo -e "${GRAY}    +-- hooks/         (cle-hook.sh)${NC}"
-echo -e "${GRAY}    +-- lib/           (node_modules isoles + cle-api-handler.js)${NC}"
+echo -e "${GRAY}    +-- lib/           (node_modules avec cli-claudy.js)${NC}"
 echo -e "${GRAY}    +-- settings.json  (configuration)${NC}"
 echo -e "${GRAY}    +-- CLAUDE.md      (system prompt)${NC}"
 echo ""
