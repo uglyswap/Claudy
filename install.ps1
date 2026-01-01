@@ -150,7 +150,7 @@ try {
 }
 
 # ============================================
-# INSTALL HOOKS (for /cle-api command)
+# INSTALL HOOKS (for /cle-api command fallback)
 # ============================================
 Write-Host "Installation des hooks Claudy..." -ForegroundColor Yellow
 
@@ -158,9 +158,23 @@ $cleHookUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/hooks/cle-
 $cleHookPath = Join-Path $claudyHooksDir "cle-hook.ps1"
 try {
     Invoke-WebRequest -Uri $cleHookUrl -OutFile $cleHookPath -UseBasicParsing
-    Write-Host "[OK] Hook /cle-api installe (fonctionne SANS modele)" -ForegroundColor Magenta
+    Write-Host "[OK] Hook /cle-api installe" -ForegroundColor Green
 } catch {
     Write-Host "[WARN] Impossible de telecharger le hook cle-api" -ForegroundColor Yellow
+}
+
+# ============================================
+# INSTALL CLE-API HANDLER (for native /cle-api command)
+# ============================================
+Write-Host "Installation du handler /cle-api..." -ForegroundColor Yellow
+
+$cleHandlerUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/lib/cle-api-handler.js"
+$cleHandlerPath = Join-Path $claudyLibDir "cle-api-handler.js"
+try {
+    Invoke-WebRequest -Uri $cleHandlerUrl -OutFile $cleHandlerPath -UseBasicParsing
+    Write-Host "[OK] Handler /cle-api installe (fonctionne SANS modele)" -ForegroundColor Magenta
+} catch {
+    Write-Host "[WARN] Impossible de telecharger le handler cle-api" -ForegroundColor Yellow
 }
 
 # ============================================
@@ -356,13 +370,13 @@ Write-Host "  - Identite Claudy Focan (Dikkenek)" -ForegroundColor Magenta
 Write-Host ""
 Write-Host "Gestion de la cle API :" -ForegroundColor White
 Write-Host "  - Au demarrage: si cle invalide, Claudy demande une nouvelle" -ForegroundColor Cyan
-Write-Host "  - Dans Claudy: /cle-api NOUVELLE_CLE (sans modele!)" -ForegroundColor Cyan
+Write-Host "  - Dans Claudy: /cle-api (apparait dans autocomplete, SANS modele)" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Structure d'installation :" -ForegroundColor Gray
 Write-Host "  ~/.claudy/" -ForegroundColor DarkGray
 Write-Host "    +-- bin/           (claudy)" -ForegroundColor DarkGray
 Write-Host "    +-- hooks/         (cle-hook.ps1)" -ForegroundColor DarkGray
-Write-Host "    +-- lib/           (node_modules isoles)" -ForegroundColor DarkGray
+Write-Host "    +-- lib/           (node_modules + cle-api-handler.js)" -ForegroundColor DarkGray
 Write-Host "    +-- modules/       (Claudy-Logo.psm1)" -ForegroundColor DarkGray
 Write-Host "    +-- settings.json  (configuration)" -ForegroundColor DarkGray
 Write-Host "    +-- CLAUDE.md      (system prompt)" -ForegroundColor DarkGray
