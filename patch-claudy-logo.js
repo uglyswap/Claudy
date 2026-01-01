@@ -319,6 +319,97 @@ if (content.includes('Welcome back')) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// PATCH 11: Replace "Welcome to Claude Code" with "Welcome to Claudy"
+// ═══════════════════════════════════════════════════════════════════════════
+if (content.includes('"Welcome to Claude Code"')) {
+    content = content.split('"Welcome to Claude Code"').join('"Welcome to Claudy"');
+    patchCount++;
+    console.log('  [OK] Replaced "Welcome to Claude Code" → "Welcome to Claudy"');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PATCH 12: Replace onboarding ASCII art (dark theme) with CLAUDY logo
+// The original shows stars (*) and cloud blocks (█████▓▓░, ███▓░, etc.)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const onboardingOldLines = [
+    '"     *                                       █████▓▓░     "',
+    '"                                 *         ███▓░     ░░   "',
+    '"            ░░░░░░                        ███▓░           "',
+    '"    ░░░   ░░░░░░░░░░                      ███▓░           "',
+    '"                                             ░▓▓███▓▓░    "'
+];
+
+const onboardingNewLines = [
+    '" ██████╗██╗      █████╗ ██╗   ██╗██████╗ ██╗   ██╗        "',
+    '"██╔════╝██║     ██╔══██╗██║   ██║██╔══██╗╚██╗ ██╔╝        "',
+    '"██║     ██║     ███████║██║   ██║██║  ██║ ╚████╔╝         "',
+    '"██║     ██║     ██╔══██║██║   ██║██║  ██║  ╚██╔╝          "',
+    '"              ▓▒░ CLAUDY CLI ░▒▓                          "'
+];
+
+let onboardingPatchApplied = 0;
+for (let i = 0; i < onboardingOldLines.length; i++) {
+    if (content.includes(onboardingOldLines[i])) {
+        content = content.replace(onboardingOldLines[i], onboardingNewLines[i]);
+        onboardingPatchApplied++;
+    }
+}
+
+if (onboardingPatchApplied > 0) {
+    patchCount++;
+    console.log(`  [OK] Replaced ${onboardingPatchApplied} onboarding ASCII art lines with CLAUDY logo`);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PATCH 13: Replace onboarding ASCII art (light theme) with CLAUDY logo
+// ═══════════════════════════════════════════════════════════════════════════
+
+const onboardingLightOldLines = [
+    '"            ░░░░░░                                        "',
+    '"    ░░░   ░░░░░░░░░░                                      "',
+    '"   ░░░░░░░░░░░░░░░░░░░                                    "'
+];
+
+const onboardingLightNewLines = [
+    '" ██████╗██╗      █████╗ ██╗   ██╗██████╗ ██╗   ██╗        "',
+    '"██╔════╝██║     ██╔══██╗██║   ██║██╔══██╗╚██╗ ██╔╝        "',
+    '"██║     ██║     ███████║██║   ██║██║  ██║ ╚████╔╝         "'
+];
+
+let lightPatchApplied = 0;
+for (let i = 0; i < onboardingLightOldLines.length; i++) {
+    if (content.includes(onboardingLightOldLines[i])) {
+        content = content.replace(onboardingLightOldLines[i], onboardingLightNewLines[i]);
+        lightPatchApplied++;
+    }
+}
+
+if (lightPatchApplied > 0) {
+    patchCount++;
+    console.log(`  [OK] Replaced ${lightPatchApplied} light theme onboarding lines with CLAUDY logo`);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PATCH 14: Replace Claude mascot from onboarding with CLAUDY text
+// ═══════════════════════════════════════════════════════════════════════════
+
+const clawdPatterns = [
+    { old: ',"      ",s0.default.createElement(C,{color:"clawd_body"}," █████████ "),"', new: ',"╚██████╗███████╗██║  ██║╚██████╔╝██████╔╝   ██║   "' },
+    { old: ',"      ",s0.default.createElement(C,{color:"clawd_body"},"██▄█████▄██"),', new: '," ╚═════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝    ╚═╝   ",' },
+    { old: '"…………………",s0.default.createElement(C,{color:"clawd_body"},"█ █   █ █"),"………………………………………………………………………………………………………………"', new: '"……………………………▓▒░ CLAUDY CLI ░▒▓………………………………………………………………"' }
+];
+
+for (const p of clawdPatterns) {
+    if (content.includes(p.old)) {
+        content = content.replace(p.old, p.new);
+        patchCount++;
+        console.log('  [OK] Replaced clawd mascot line with CLAUDY branding');
+    }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
 // WRITE PATCHED COPY (NOT modifying original!)
 // ═══════════════════════════════════════════════════════════════════════════
 
