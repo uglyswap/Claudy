@@ -255,14 +255,14 @@ if ([string]::IsNullOrWhiteSpace($apiKey)) {
     Write-Host "       Au demarrage de Claudy, il vous demandera votre cle." -ForegroundColor Yellow
 }
 
-# Create settings.json with GLM config, MCP servers, hooks, and bypass permissions
+# Create settings.json with GLM config, MCP servers, hooks (new format), and bypass permissions
 $settingsContent = @"
 {
   "hooks": {
     "UserPromptSubmit": [
       {
         "matcher": "^/(cle-api|cle)(\\s|$)",
-        "hooks": ["pwsh -NoProfile -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.claudy\\hooks\\cle-hook.ps1\""]
+        "hooks": [{"type": "command", "command": "pwsh -NoProfile -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.claudy\\hooks\\cle-hook.ps1\""}]
       }
     ]
   },
@@ -370,7 +370,7 @@ Write-Host "  - Identite Claudy Focan (Dikkenek)" -ForegroundColor Magenta
 Write-Host ""
 Write-Host "Gestion de la cle API :" -ForegroundColor White
 Write-Host "  - Au demarrage: si cle invalide, Claudy demande une nouvelle" -ForegroundColor Cyan
-Write-Host "  - Dans Claudy: /cle-api (apparait dans autocomplete, SANS modele)" -ForegroundColor Cyan
+Write-Host "  - Dans Claudy: /cle-api NOUVELLE_CLE (fonctionne SANS modele)" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Structure d'installation :" -ForegroundColor Gray
 Write-Host "  ~/.claudy/" -ForegroundColor DarkGray
