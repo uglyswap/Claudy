@@ -132,7 +132,7 @@ chmod +x "$LOGO_SCRIPT_PATH" 2>/dev/null || true
 echo -e "${GREEN}[OK] Logo anime installe${NC}"
 
 # ============================================
-# CREATE CLAUDY WRAPPER SCRIPT
+# CREATE CLAUDY WRAPPER SCRIPT WITH API KEY VALIDATION
 # ============================================
 CLAUDY_WRAPPER_PATH="$CLAUDY_BIN_DIR/claudy"
 cat > "$CLAUDY_WRAPPER_PATH" << 'WRAPPER'
@@ -165,7 +165,137 @@ if [ "$SHOW_LOGO" = true ] && [ -x "$LOGO_SCRIPT" ]; then
     "$LOGO_SCRIPT" 2>/dev/null || true
 fi
 
-# Read settings.json and export env vars
+# ============================================
+# API KEY VALIDATION AT STARTUP (SILENT)
+# ============================================
+
+test_api_key() {
+    local key="$1"
+    
+    # Check for placeholder or empty key
+    if [ -z "$key" ] || [ "$key" = "VOTRE_CLE_API_ZAI_ICI" ] || [ ${#key} -lt 10 ]; then
+        return 1
+    fi
+    
+    # Test the API key silently
+    local response
+    response=$(curl -s -o /dev/null -w "%{http_code}" \
+        -X POST "https://api.z.ai/api/anthropic/v1/messages" \
+        -H "Authorization: Bearer $key" \
+        -H "Content-Type: application/json" \
+        -d '{"model":"glm-4.7","max_tokens":1,"messages":[{"role":"user","content":"test"}]}' \
+        --connect-timeout 10 2>/dev/null)
+    
+    if [ "$response" = "401" ] || [ "$response" = "403" ]; then
+        return 1
+    fi
+    return 0
+}
+
+update_api_key() {
+    local new_key="$1"
+    local old_key="$2"
+    
+    if [ -f "$SETTINGS_PATH" ]; then
+        # Use sed to replace all occurrences
+        sed -i.bak "s|$old_key|$new_key|g" "$SETTINGS_PATH"
+        rm -f "${SETTINGS_PATH}.bak"
+        return 0
+    fi
+    return 1
+}
+
+prompt_for_new_key() {
+    local reason="$1"
+    
+    echo ""
+    echo -e "\033[1;33m========================================\033[0m"
+    echo -e "\033[1;33m   CLE API Z.AI INVALIDE OU MANQUANTE  \033[0m"
+    echo -e "\033[1;33m========================================\033[0m"
+    echo ""
+    echo -e "\033[0;90mRaison: $reason\033[0m"
+    echo ""
+    echo -e "\033[0;36mEntrez votre nouvelle cle API Z.AI:\033[0m"
+    read -r new_key
+    
+    if [ -z "$new_key" ]; then
+        echo -e "\033[0;31m[ERREUR] La cle ne peut pas etre vide.\033[0m"
+        return 1
+    fi
+    
+    echo "$new_key"
+}
+
+# Read current API key from settings.json
+API_KEY=""
+if [ -f "$SETTINGS_PATH" ]; then
+    if command -v python3 &> /dev/null; then
+        API_KEY=$(python3 -c "
+import json
+try:
+    with open('$SETTINGS_PATH', 'r') as f:
+        settings = json.load(f)
+    print(settings.get('env', {}).get('ANTHROPIC_AUTH_TOKEN', ''))
+except:
+    pass
+" 2>/dev/null)
+    elif command -v python &> /dev/null; then
+        API_KEY=$(python -c "
+import json
+try:
+    with open('$SETTINGS_PATH', 'r') as f:
+        settings = json.load(f)
+    print(settings.get('env', {}).get('ANTHROPIC_AUTH_TOKEN', ''))
+except:
+    pass
+" 2>/dev/null)
+    fi
+fi
+
+# Check if API key needs update
+KEY_NEEDS_UPDATE=false
+UPDATE_REASON=""
+
+if [ -z "$API_KEY" ]; then
+    KEY_NEEDS_UPDATE=true
+    UPDATE_REASON="Aucune cle API trouvee dans settings.json"
+elif [ "$API_KEY" = "VOTRE_CLE_API_ZAI_ICI" ]; then
+    KEY_NEEDS_UPDATE=true
+    UPDATE_REASON="Cle API placeholder detectee"
+else
+    # Test the API key silently (no message)
+    if ! test_api_key "$API_KEY"; then
+        KEY_NEEDS_UPDATE=true
+        UPDATE_REASON="Cle API invalide ou expiree (erreur 401/403)"
+    fi
+fi
+
+# If key needs update, prompt for new one
+if [ "$KEY_NEEDS_UPDATE" = true ]; then
+    NEW_KEY=$(prompt_for_new_key "$UPDATE_REASON")
+    
+    if [ -n "$NEW_KEY" ]; then
+        OLD_KEY_TO_REPLACE="${API_KEY:-VOTRE_CLE_API_ZAI_ICI}"
+        
+        if update_api_key "$NEW_KEY" "$OLD_KEY_TO_REPLACE"; then
+            echo ""
+            echo -e "\033[0;32m[OK] Cle API mise a jour dans les 4 emplacements\033[0m"
+            echo ""
+            API_KEY="$NEW_KEY"
+        else
+            echo -e "\033[0;31m[ERREUR] Impossible de mettre a jour settings.json\033[0m"
+            exit 1
+        fi
+    else
+        echo -e "\033[0;31m[ERREUR] Cle API requise pour utiliser Claudy.\033[0m"
+        exit 1
+    fi
+fi
+
+# ============================================
+# EXPORT ENVIRONMENT VARIABLES
+# ============================================
+
 if [ -f "$SETTINGS_PATH" ]; then
     if command -v python3 &> /dev/null; then
         eval $(python3 -c "
@@ -304,8 +434,7 @@ if [ -z "$API_KEY" ]; then
     KEY_CONFIGURED=false
     echo ""
     echo -e "${YELLOW}[INFO] Configuration creee sans cle API.${NC}"
-    echo -e "${YELLOW}       Editez le fichier suivant pour ajouter votre cle :${NC}"
-    echo -e "${CYAN}       $SETTINGS_PATH${NC}"
+    echo -e "${YELLOW}       Au demarrage de Claudy, il vous demandera votre cle.${NC}"
 fi
 
 # Create settings.json with GLM config, MCP servers, bypass permissions, and disabled auto-updater
@@ -393,7 +522,7 @@ CLE_API_SKILL_PATH="$CLE_API_SKILL_DIR/SKILL.md"
 
 curl -fsSL "$CLE_API_SKILL_URL" -o "$CLE_API_SKILL_PATH" 2>/dev/null || true
 
-echo -e "${MAGENTA}[OK] Skill /cle-api installe (changer la cle API)${NC}"
+echo -e "${MAGENTA}[OK] Skill /cle-api installe${NC}"
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
@@ -409,8 +538,7 @@ echo -e "${GRAY}    claudy --no-logo    Desactive le logo anime${NC}"
 echo -e "${GRAY}    claudy -n           Raccourci pour --no-logo${NC}"
 echo ""
 if [ "$KEY_CONFIGURED" = false ]; then
-    echo -e "${YELLOW}N'oubliez pas d'ajouter votre cle API Z.AI dans :${NC}"
-    echo -e "${CYAN}    $SETTINGS_PATH${NC}"
+    echo -e "${YELLOW}Au premier demarrage, Claudy vous demandera votre cle API Z.AI.${NC}"
     echo ""
 fi
 echo -e "${CYAN}========================================${NC}"
@@ -421,11 +549,6 @@ echo -e "${WHITE}Claudy est 100% independant de Claude Code :${NC}"
 echo -e "${GRAY}  - Installation isolee : ~/.claudy/lib/${NC}"
 echo -e "${GRAY}  - Configuration isolee : ~/.claudy/settings.json${NC}"
 echo -e "${GRAY}  - Binaires isoles : ~/.claudy/bin/${NC}"
-echo ""
-echo -e "${GREEN}Actions sans impact sur Claudy :${NC}"
-echo -e "${GRAY}  - Desinstaller Claude Code (npm uninstall -g)${NC}"
-echo -e "${GRAY}  - Mettre a jour Claude Code (npm update)${NC}"
-echo -e "${GRAY}  - Modifier ~/.claude/ (config Claude Code)${NC}"
 echo ""
 echo -e "${WHITE}Fonctionnalites incluses :${NC}"
 echo -e "${MAGENTA}  - Logo CLAUDY avec degrade jaune-magenta${NC}"
@@ -438,14 +561,15 @@ echo -e "${GREEN}  - Version figee ${CLAUDE_CODE_VERSION} (pas de mises a jour a
 echo -e "${MAGENTA}  - AKHITHINK: Deep reasoning mode${NC}"
 echo -e "${MAGENTA}  - Identite Claudy Focan (Dikkenek)${NC}"
 echo ""
-echo -e "${WHITE}Commandes speciales :${NC}"
-echo -e "${CYAN}  - /cle-api <nouvelle_cle>  Changer la cle API Z.AI${NC}"
+echo -e "${WHITE}Gestion de la cle API :${NC}"
+echo -e "${CYAN}  - Au demarrage: si cle invalide, Claudy demande une nouvelle${NC}"
+echo -e "${CYAN}  - Dans Claudy: /cle-api pour changer la cle${NC}"
 echo ""
 echo -e "${GRAY}Structure d'installation :${NC}"
 echo -e "${GRAY}  ~/.claudy/${NC}"
-echo -e "${GRAY}    ├── bin/           (claudy wrapper)${NC}"
-echo -e "${GRAY}    ├── lib/           (node_modules isoles)${NC}"
-echo -e "${GRAY}    ├── skills/        (skills Claudy)${NC}"
-echo -e "${GRAY}    ├── settings.json  (configuration)${NC}"
-echo -e "${GRAY}    └── CLAUDE.md      (system prompt)${NC}"
+echo -e "${GRAY}    +-- bin/           (claudy)${NC}"
+echo -e "${GRAY}    +-- lib/           (node_modules isoles)${NC}"
+echo -e "${GRAY}    +-- skills/        (skills Claudy)${NC}"
+echo -e "${GRAY}    +-- settings.json  (configuration)${NC}"
+echo -e "${GRAY}    +-- CLAUDE.md      (system prompt)${NC}"
 echo ""
