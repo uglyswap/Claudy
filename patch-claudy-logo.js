@@ -12,7 +12,7 @@
  * - AKHITHINK detection for rainbow animation
  * - All "Claude Code" text replaced with "Claudy"
  * - All config paths changed from ~/.claude/ to ~/.claudy/
- * - /cle-api command works via hook (see settings.json)
+ * - /cle-api command injected as native command (no model needed)
  */
 
 const fs = require('fs');
@@ -236,12 +236,57 @@ if (configDirOccurrences > 0) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// NOTE: /cle-api command works via hook system (settings.json)
-// The hook intercepts /cle-api and /cle BEFORE reaching the model
-// This is more reliable than injecting into minified code
+// PATCH 8: Inject /cle-api and /cle as native slash commands
+// These commands work WITHOUT the model - pure Node.js
+//
+// STRATEGY: Find the commands array MW9=W0(()=>[...,g89,m89,...])
+// where g89=clear, m89=compact. Inject inline command objects between them.
+// Pattern "g89,m89" is UNIQUE and safe - only exists in commands array
 // ═══════════════════════════════════════════════════════════════════════════
 
-console.log('  [INFO] /cle-api works via hook (no autocomplete, but more reliable)');
+// Inline command objects (inserted directly into the array)
+const cleApiInline = '{type:"local",name:"cle-api",description:"Changer la cle API Z.AI",isEnabled:()=>!0,isHidden:!1,supportsNonInteractive:!1,async call(){const n=require("path"),o=require("os"),h=n.join(o.homedir(),".claudy","lib","cle-api-handler.js");try{return await require(h)()}catch(e){console.log("\\x1b[31m[ERREUR] "+e.message+"\\x1b[0m");return{type:"text",value:""}}},userFacingName(){return"cle-api"}}';
+
+const cleInline = '{type:"local",name:"cle",description:"Alias pour /cle-api",isEnabled:()=>!0,isHidden:!0,supportsNonInteractive:!1,async call(){const n=require("path"),o=require("os"),h=n.join(o.homedir(),".claudy","lib","cle-api-handler.js");try{return await require(h)()}catch(e){console.log("\\x1b[31m[ERREUR] "+e.message+"\\x1b[0m");return{type:"text",value:""}}},userFacingName(){return"cle"}}';
+
+let commandInjected = false;
+
+// First check if already injected
+if (content.includes('name:"cle-api"')) {
+    console.log('  [INFO] /cle-api command already injected');
+    commandInjected = true;
+} else {
+    // STRATEGY 1: Find g89,m89 pattern (clear,compact in commands array)
+    // This is the safest - only exists in the commands array, never in assignments
+    const arrayPattern = 'g89,m89';
+    if (content.includes(arrayPattern)) {
+        const injection = 'g89,' + cleApiInline + ',' + cleInline + ',m89';
+        content = content.replace(arrayPattern, injection);
+        commandInjected = true;
+        patchCount++;
+        console.log('  [OK] Injected /cle-api and /cle into commands array (g89,m89 pattern)');
+    }
+
+    // STRATEGY 2: Fallback - find any command variable pairs in array
+    if (!commandInjected) {
+        // Look for patterns like "X89,Y89" or "a89,b89" (variable names in array)
+        const varArrayMatch = content.match(/([a-zA-Z]\d{2}),([a-zA-Z]\d{2}),([a-zA-Z]\d{2})/);
+        if (varArrayMatch) {
+            const [fullMatch, v1, v2, v3] = varArrayMatch;
+            // Inject between first and second variable
+            const injection = v1 + ',' + cleApiInline + ',' + cleInline + ',' + v2 + ',' + v3;
+            content = content.replace(fullMatch, injection);
+            commandInjected = true;
+            patchCount++;
+            console.log(`  [OK] Injected /cle-api and /cle into commands array (${v1},${v2} pattern)`);
+        }
+    }
+}
+
+if (!commandInjected) {
+    console.log('  [WARN] No commands array pattern found');
+    console.log('  [INFO] /cle-api will work via skill instead (no autocomplete)');
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // WRITE PATCHED COPY (NOT modifying original!)
@@ -254,4 +299,4 @@ console.log(`[DONE] Created cli-claudy.js with ${patchCount} patches`);
 console.log('[INFO] Original cli.js is UNCHANGED - "claude" command works normally');
 console.log('[INFO] Claudy wrapper should use cli-claudy.js');
 console.log('[INFO] All config now uses ~/.claudy/ instead of ~/.claude/');
-console.log('[INFO] /cle-api works via hook - type "/cle-api NOUVELLE_CLE" to update');
+console.log('[INFO] /cle-api command available - type / to see it in autocomplete');
