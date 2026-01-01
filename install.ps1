@@ -149,96 +149,19 @@ try {
 }
 
 # ============================================
-# CREATE CLAUDY WRAPPER SCRIPTS
+# DOWNLOAD CLAUDY WRAPPER SCRIPTS FROM GITHUB
 # ============================================
+Write-Host "Telechargement des scripts Claudy..." -ForegroundColor Yellow
 
-# Create the main PowerShell wrapper in ~/.claudy/bin/
-$claudyWrapperPath = Join-Path $claudyBinDir "claudy.ps1"
-$claudyWrapperContent = @'
-#!/usr/bin/env pwsh
-# Claudy - Independent installation wrapper
-# Uses ~/.claudy/ for EVERYTHING (config + code)
-# Completely independent from Claude Code CLI
-
-# Set terminal title to "claudy"
-$Host.UI.RawUI.WindowTitle = "claudy"
-
-$claudyDir = Join-Path $env:USERPROFILE ".claudy"
-$claudyLibDir = Join-Path $claudyDir "lib"
-$modulePath = Join-Path $claudyDir "modules\Claudy-Logo.psm1"
-$settingsPath = Join-Path $claudyDir "settings.json"
-
-# Check for --no-logo or -n flag
-$showLogo = $true
-$filteredArgs = @()
-foreach ($arg in $args) {
-    if ($arg -eq "--no-logo" -or $arg -eq "-n") {
-        $showLogo = $false
-    } else {
-        $filteredArgs += $arg
-    }
+# Download claudy.ps1 (main wrapper with API key validation)
+$claudyPs1Url = "https://raw.githubusercontent.com/uglyswap/Claudy/main/bin/claudy.ps1"
+$claudyPs1Path = Join-Path $claudyBinDir "claudy.ps1"
+try {
+    Invoke-WebRequest -Uri $claudyPs1Url -OutFile $claudyPs1Path -UseBasicParsing
+    Write-Host "[OK] claudy.ps1 telecharge (avec validation cle API)" -ForegroundColor Green
+} catch {
+    Write-Host "[WARN] Impossible de telecharger claudy.ps1" -ForegroundColor Yellow
 }
-
-# Show animated logo if module exists and not disabled
-if ($showLogo -and (Test-Path $modulePath)) {
-    try {
-        Import-Module $modulePath -Force -ErrorAction SilentlyContinue
-        Claudy-Logo -Force
-    } catch {
-        # Silently continue if logo fails
-    }
-}
-
-# Read settings.json and export env vars
-if (Test-Path $settingsPath) {
-    try {
-        $settings = Get-Content $settingsPath -Raw | ConvertFrom-Json
-        if ($settings.env) {
-            $settings.env.PSObject.Properties | ForEach-Object {
-                [Environment]::SetEnvironmentVariable($_.Name, $_.Value, "Process")
-            }
-        }
-    } catch {
-        Write-Host "[WARN] Impossible de lire settings.json" -ForegroundColor Yellow
-    }
-}
-
-# Set config dir
-$env:CLAUDE_CONFIG_DIR = $claudyDir
-
-# Path to our isolated cli-claudy.js
-$claudyExe = Join-Path $claudyLibDir "node_modules\@anthropic-ai\claude-code\cli-claudy.js"
-
-# AUTO-REPAIR: If cli-claudy.js doesn't exist, recreate it
-if (-not (Test-Path $claudyExe)) {
-    Write-Host "[AUTO-REPAIR] cli-claudy.js manquant, re-creation en cours..." -ForegroundColor Yellow
-    $patchUrl = "https://raw.githubusercontent.com/uglyswap/Claudy/main/patch-claudy-logo.js"
-    $patchPath = Join-Path $env:TEMP "patch-claudy-logo.js"
-    try {
-        Invoke-WebRequest -Uri $patchUrl -OutFile $patchPath -UseBasicParsing -ErrorAction Stop
-        $null = & node $patchPath $claudyLibDir 2>&1
-        Remove-Item $patchPath -Force -ErrorAction SilentlyContinue
-        Write-Host "[AUTO-REPAIR] cli-claudy.js recree avec succes" -ForegroundColor Green
-    } catch {
-        Write-Host "[WARN] Impossible de recreer cli-claudy.js: $_" -ForegroundColor Yellow
-    }
-}
-
-# Fallback to cli.js if cli-claudy.js still doesn't exist
-if (-not (Test-Path $claudyExe)) {
-    $claudyExe = Join-Path $claudyLibDir "node_modules\@anthropic-ai\claude-code\cli.js"
-}
-
-if (Test-Path $claudyExe) {
-    & node $claudyExe @filteredArgs
-} else {
-    Write-Host "[ERREUR] Claudy introuvable. Reinstallez avec:" -ForegroundColor Red
-    Write-Host "irm https://raw.githubusercontent.com/uglyswap/Claudy/main/install.ps1 | iex" -ForegroundColor Yellow
-    exit 1
-}
-'@
-
-$claudyWrapperContent | Out-File -FilePath $claudyWrapperPath -Encoding utf8 -Force
 
 # Create batch file in ~/.claudy/bin/
 $claudyCmdPath = Join-Path $claudyBinDir "claudy.cmd"
@@ -318,8 +241,7 @@ if ([string]::IsNullOrWhiteSpace($apiKey)) {
     $keyConfigured = $false
     Write-Host ""
     Write-Host "[INFO] Configuration creee sans cle API." -ForegroundColor Yellow
-    Write-Host "       Utilisez la commande 'cle' pour ajouter votre cle :" -ForegroundColor Yellow
-    Write-Host "       cle VOTRE_CLE_API" -ForegroundColor Cyan
+    Write-Host "       Au demarrage de Claudy, il vous demandera votre cle." -ForegroundColor Yellow
 }
 
 # Create settings.json with GLM config, MCP servers, and bypass permissions
@@ -431,8 +353,7 @@ Write-Host "    claudy --no-logo    Desactive le logo anime" -ForegroundColor Gr
 Write-Host "    claudy -n           Raccourci pour --no-logo" -ForegroundColor Gray
 Write-Host ""
 if (-not $keyConfigured) {
-    Write-Host "N'oubliez pas d'ajouter votre cle API Z.AI :" -ForegroundColor Yellow
-    Write-Host "    cle VOTRE_CLE_API" -ForegroundColor Cyan
+    Write-Host "Au premier demarrage, Claudy vous demandera votre cle API Z.AI." -ForegroundColor Yellow
     Write-Host ""
 }
 Write-Host "========================================" -ForegroundColor Cyan
@@ -460,17 +381,17 @@ Write-Host "  - Version figee $CLAUDE_CODE_VERSION (pas de mises a jour auto)" -
 Write-Host "  - AKHITHINK: Deep reasoning mode" -ForegroundColor Magenta
 Write-Host "  - Identite Claudy Focan (Dikkenek)" -ForegroundColor Magenta
 Write-Host ""
-Write-Host "Commandes speciales :" -ForegroundColor White
-Write-Host "  cle                     Mettre a jour la cle API (standalone)" -ForegroundColor Cyan
-Write-Host "  cle NOUVELLE_CLE        Mettre a jour directement" -ForegroundColor Cyan
-Write-Host "  /cle-api                Mettre a jour via Claudy (skill)" -ForegroundColor Cyan
+Write-Host "Gestion de la cle API :" -ForegroundColor White
+Write-Host "  - Au demarrage: Claudy verifie la cle et demande une nouvelle si invalide" -ForegroundColor Cyan
+Write-Host "  - Commande 'cle': mise a jour manuelle (cle NOUVELLE_CLE)" -ForegroundColor Cyan
+Write-Host "  - Skill /cle-api: mise a jour via Claudy" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Structure d'installation :" -ForegroundColor Gray
 Write-Host "  ~/.claudy/" -ForegroundColor DarkGray
-Write-Host "    ├── bin/           (claudy, cle)" -ForegroundColor DarkGray
-Write-Host "    ├── lib/           (node_modules isoles)" -ForegroundColor DarkGray
-Write-Host "    ├── modules/       (Claudy-Logo.psm1)" -ForegroundColor DarkGray
-Write-Host "    ├── skills/        (skills Claudy)" -ForegroundColor DarkGray
-Write-Host "    ├── settings.json  (configuration)" -ForegroundColor DarkGray
-Write-Host "    └── CLAUDE.md      (system prompt)" -ForegroundColor DarkGray
+Write-Host "    +-- bin/           (claudy, cle)" -ForegroundColor DarkGray
+Write-Host "    +-- lib/           (node_modules isoles)" -ForegroundColor DarkGray
+Write-Host "    +-- modules/       (Claudy-Logo.psm1)" -ForegroundColor DarkGray
+Write-Host "    +-- skills/        (skills Claudy)" -ForegroundColor DarkGray
+Write-Host "    +-- settings.json  (configuration)" -ForegroundColor DarkGray
+Write-Host "    +-- CLAUDE.md      (system prompt)" -ForegroundColor DarkGray
 Write-Host ""
