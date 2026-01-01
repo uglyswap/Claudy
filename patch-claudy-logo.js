@@ -228,7 +228,7 @@ if (skillsOccurrences > 0) {
 // Covers: settings, skills discovery, agents, hooks, etc.
 // ═══════════════════════════════════════════════════════════════════════════
 
-const configDirOccurrences = (content.match(/\"\.claude\"/g) || []).length;
+const configDirOccurrences = (content.match(/"\.claude"/g) || []).length;
 if (configDirOccurrences > 0) {
     content = content.split('".claude"').join('".claudy"');
     patchCount++;
@@ -237,17 +237,18 @@ if (configDirOccurrences > 0) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PATCH 8: Inject /cle-api and /cle as native slash commands
-// These commands work WITHOUT the model - pure Node.js
+// These commands work WITHOUT the model - pure Node.js with ESM dynamic imports
 //
 // STRATEGY: Find the commands array MW9=W0(()=>[...,g89,m89,...])
 // where g89=clear, m89=compact. Inject inline command objects between them.
 // Pattern "g89,m89" is UNIQUE and safe - only exists in commands array
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Inline command objects (inserted directly into the array)
-const cleApiInline = '{type:"local",name:"cle-api",description:"Changer la cle API Z.AI",isEnabled:()=>!0,isHidden:!1,supportsNonInteractive:!1,async call(){const n=require("path"),o=require("os"),h=n.join(o.homedir(),".claudy","lib","cle-api-handler.js");try{return await require(h)()}catch(e){console.log("\\x1b[31m[ERREUR] "+e.message+"\\x1b[0m");return{type:"text",value:""}}},userFacingName(){return"cle-api"}}';
+// Inline command objects using dynamic import() for ESM compatibility
+// The command accepts the new key as argument: /cle-api NEW_KEY
+const cleApiInline = '{type:"local",name:"cle-api",description:"Changer la cle API Z.AI (usage: /cle-api NOUVELLE_CLE)",isEnabled:()=>!0,isHidden:!1,supportsNonInteractive:!1,async call(input){const K=String(input||"").trim();if(!K){console.log("\\n\\x1b[36m========================================\\x1b[0m");console.log("\\x1b[36m   MISE A JOUR CLE API Z.AI\\x1b[0m");console.log("\\x1b[36m========================================\\x1b[0m");console.log("\\n\\x1b[33mUsage: /cle-api VOTRE_NOUVELLE_CLE\\x1b[0m");console.log("\\n\\x1b[90mExemple:\\x1b[0m");console.log("  /cle-api abc123def456.xyz789\\n");return{type:"text",value:""}}try{const f=await import("fs"),p=await import("path"),o=await import("os");const sp=p.join(o.homedir(),".claudy","settings.json");const c=f.readFileSync(sp,"utf8");const s=JSON.parse(c);const ok=s.env&&s.env.ANTHROPIC_AUTH_TOKEN;if(!ok)throw new Error("Ancienne cle non trouvee");const cnt=(c.match(new RegExp(ok.replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\$&"),"g"))||[]).length;const nc=c.split(ok).join(K);f.writeFileSync(sp,nc,"utf8");const m1=ok.length>10?ok.substring(0,6)+"..."+ok.slice(-4):"***";const m2=K.length>10?K.substring(0,6)+"..."+K.slice(-4):"***";console.log("\\n\\x1b[32m========================================\\x1b[0m");console.log("\\x1b[32m   CLE API Z.AI MISE A JOUR\\x1b[0m");console.log("\\x1b[32m========================================\\x1b[0m\\n");console.log("\\x1b[90mAncienne: "+m1+"\\x1b[0m");console.log("\\x1b[37mNouvelle: "+m2+"\\x1b[0m\\n");console.log("\\x1b[32m- ANTHROPIC_AUTH_TOKEN: OK\\x1b[0m");console.log("\\x1b[32m- Z_AI_API_KEY (vision): OK\\x1b[0m");console.log("\\x1b[32m- Authorization web-search-prime: OK\\x1b[0m");console.log("\\x1b[32m- Authorization web-reader: OK\\x1b[0m\\n");console.log("\\x1b[36m"+cnt+" occurrence(s) remplacee(s)\\x1b[0m");console.log("\\n\\x1b[33mRedemarrez Claudy pour appliquer.\\x1b[0m\\n")}catch(e){console.log("\\x1b[31m[ERREUR] "+e.message+"\\x1b[0m")}return{type:"text",value:""}},userFacingName(){return"cle-api"}}';
 
-const cleInline = '{type:"local",name:"cle",description:"Alias pour /cle-api",isEnabled:()=>!0,isHidden:!0,supportsNonInteractive:!1,async call(){const n=require("path"),o=require("os"),h=n.join(o.homedir(),".claudy","lib","cle-api-handler.js");try{return await require(h)()}catch(e){console.log("\\x1b[31m[ERREUR] "+e.message+"\\x1b[0m");return{type:"text",value:""}}},userFacingName(){return"cle"}}';
+const cleInline = '{type:"local",name:"cle",description:"Alias pour /cle-api",isEnabled:()=>!0,isHidden:!0,supportsNonInteractive:!1,async call(input){const K=String(input||"").trim();if(!K){console.log("\\x1b[33mUsage: /cle VOTRE_NOUVELLE_CLE\\x1b[0m");return{type:"text",value:""}}try{const f=await import("fs"),p=await import("path"),o=await import("os");const sp=p.join(o.homedir(),".claudy","settings.json");const c=f.readFileSync(sp,"utf8");const s=JSON.parse(c);const ok=s.env&&s.env.ANTHROPIC_AUTH_TOKEN;if(!ok)throw new Error("Ancienne cle non trouvee");const nc=c.split(ok).join(K);f.writeFileSync(sp,nc,"utf8");console.log("\\x1b[32m[OK] Cle API mise a jour. Redemarrez Claudy.\\x1b[0m")}catch(e){console.log("\\x1b[31m[ERREUR] "+e.message+"\\x1b[0m")}return{type:"text",value:""}},userFacingName(){return"cle"}}';
 
 let commandInjected = false;
 
