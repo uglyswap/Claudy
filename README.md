@@ -18,11 +18,11 @@ Claudy est **complètement isolé** de Claude Code CLI. Les deux programmes sont
 ```
 ~/.claudy/                          # Installation Claudy (isolée)
 ├── bin/                            # Commande claudy
+├── hooks/                          # Hooks (commandes sans modèle)
 ├── lib/                            # node_modules isolés
 │   └── node_modules/
 │       └── @anthropic-ai/claude-code/
 ├── settings.json                   # Configuration Claudy
-├── skills/                         # Skills Claudy
 └── CLAUDE.md                       # System prompt
 
 ~/.claude/                          # Installation Claude Code (séparée)
@@ -202,12 +202,25 @@ La configuration de Claudy est stockée dans `~/.claudy/settings.json` :
 
 ### Modifier la clé API
 
-Utilisez la commande intégrée :
+#### Méthode 1 : Dans Claudy (recommandé)
+
+Tapez directement dans Claudy :
 ```
-/cle-api <votre_nouvelle_cle>
+/cle-api VOTRE_NOUVELLE_CLE
 ```
 
-Ou éditez le fichier et remplacez toutes les occurrences de votre ancienne clé par la nouvelle.
+**Important** : Cette commande fonctionne **SANS utiliser le modèle**. Elle est interceptée par un hook et exécutée localement. Cela signifie :
+- ✅ Fonctionne même si votre clé actuelle est invalide
+- ✅ Pas de consommation de tokens
+- ✅ Mise à jour instantanée des 4 emplacements
+
+#### Méthode 2 : Au démarrage
+
+Si votre clé est invalide ou manquante, Claudy vous demandera automatiquement une nouvelle clé au démarrage (avant de lancer le modèle).
+
+#### Méthode 3 : Manuellement
+
+Éditez `~/.claudy/settings.json` et remplacez toutes les occurrences de votre ancienne clé par la nouvelle (4 emplacements).
 
 ### Mode permissions
 
@@ -290,6 +303,9 @@ rm -rf ~/.claude
 │   ├── claudy.ps1       # Wrapper (Windows PowerShell)
 │   ├── claudy.cmd       # Wrapper (Windows CMD)
 │   └── claudy-logo.sh   # Script logo animé
+├── hooks/
+│   ├── cle-hook.ps1     # Hook /cle-api (Windows)
+│   └── cle-hook.sh      # Hook /cle-api (Linux/Mac)
 ├── lib/
 │   ├── package.json
 │   └── node_modules/
@@ -299,10 +315,7 @@ rm -rf ~/.claude
 │               └── cli-claudy.js # Patché avec branding Claudy
 ├── modules/
 │   └── Claudy-Logo.psm1 # Module PowerShell pour le logo
-├── skills/
-│   └── cle-api/
-│       └── SKILL.md     # Skill pour changer la clé API
-├── settings.json        # Configuration (API, MCP servers)
+├── settings.json        # Configuration (API, MCP servers, hooks)
 └── CLAUDE.md            # System prompt personnalisé
 ```
 
