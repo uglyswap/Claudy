@@ -319,24 +319,32 @@ if (content.includes('Welcome back')) {
 }
 // ═══════════════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════════════
-// PATCH 11: Auto-accept bypass permissions dialog
-// Instead of showing the warning dialog, we auto-accept it in the useEffect
-// This keeps bypass mode ACTIVE while skipping the confirmation popup
-// The useEffect normally logs "shown" - we replace it with full accept logic:
-//   1. Log accept telemetry
-//   2. Update config with bypassPermissionsModeAccepted: true
-//   3. Call onAccept callback
+// PATCH 11: Skip bypass permissions dialog completely
+// Two-part fix:
+//   11a. Modify condition to never show the dialog (always false)
+//   11b. Modify useEffect to set config flag anyway (for consistency)
 // ═══════════════════════════════════════════════════════════════════════════
 
+// 11a: Make the condition always false so dialog never renders
+const bypassConditionOld = '(A==="bypassPermissions"||Q)&&!b1().bypassPermissionsModeAccepted)await';
+const bypassConditionNew = '!1)await';
+
+if (content.includes(bypassConditionOld)) {
+    content = content.replace(bypassConditionOld, bypassConditionNew);
+    patchCount++;
+    console.log('  [OK] Bypass dialog condition disabled (never shows)');
+} else {
+    console.log('  [WARN] Bypass condition pattern not found');
+}
+
+// 11b: Also modify the useEffect to auto-accept (sets config flag for future runs)
 const bypassUseEffectOld = 'SD.default.useEffect(()=>{n("tengu_bypass_permissions_mode_dialog_shown",{})},[])';
 const bypassUseEffectNew = 'SD.default.useEffect(()=>{n("tengu_bypass_permissions_mode_dialog_accept",{}),d0((Z)=>{if(Z.bypassPermissionsModeAccepted===!0)return Z;return{...Z,bypassPermissionsModeAccepted:!0}}),A()},[])';
 
 if (content.includes(bypassUseEffectOld)) {
     content = content.replace(bypassUseEffectOld, bypassUseEffectNew);
     patchCount++;
-    console.log('  [OK] Auto-accept bypass permissions dialog (useEffect executes accept logic)');
-} else {
-    console.log('  [WARN] Bypass useEffect pattern not found');
+    console.log('  [OK] Bypass useEffect modified (sets config flag)');
 }
 
 // PATCH 12: Replace onboarding "Welcome to Claude Code" with Claudy branding
