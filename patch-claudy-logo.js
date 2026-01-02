@@ -357,6 +357,80 @@ if (content.includes('"Welcome to Claude Code"')) {
     console.log('  [OK] Replaced onboarding "Welcome to Claude Code" → "Bienvenue sur Claudy"');
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// PATCH 13: Replace U17 alternative logo function (u2 version)
+// This function displays a simplified logo for certain terminals
+// We replace the entire function body to show Claudy logo instead
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Marker to find the U17 function (unique enough to identify it)
+const u17Marker = 'function U17(){return u2.createElement(T,{flexDirection:"column",alignItems:"center"},u2.createElement(C,null,u2.createElement(C,{color:"text"}," * "),u2.createElement(C,{color:"ice_blue"}';
+if (content.includes(u17Marker)) {
+    // Find the full function by locating start and counting braces
+    const startIdx = content.indexOf(u17Marker);
+    let depth = 0;
+    let endIdx = startIdx;
+    for (let i = startIdx; i < content.length && i < startIdx + 2000; i++) {
+        if (content[i] === '{') depth++;
+        if (content[i] === '}') {
+            depth--;
+            if (depth === 0) {
+                endIdx = i + 1;
+                break;
+            }
+        }
+    }
+    const oldU17 = content.substring(startIdx, endIdx);
+
+    // New U17 function with Claudy logo
+    const u17New = 'function U17(){return u2.createElement(T,{flexDirection:"column",alignItems:"center"},' +
+        logoLines.map(line => 'u2.createElement(C,{color:"' + line.color + '"},"' + line.text + '")').join(',') + ',' +
+        'u2.createElement(C,{color:"#00ffff"},"' + signatureLine + '"),' +
+        'u2.createElement(C,{color:"#ffff00"},"' + tagline + '"))}';
+
+    content = content.replace(oldU17, u17New);
+    patchCount++;
+    console.log('  [OK] Replaced U17 alternative logo function with Claudy gradient');
+} else {
+    console.log('  [INFO] U17 alternative logo function not found (may be already patched)');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PATCH 14: Replace L17 alternative logo function ($B version)
+// This function handles Apple_Terminal special case + default logo
+// We replace entire function to always show Claudy logo
+// ═══════════════════════════════════════════════════════════════════════════
+
+const l17Marker = 'function L17(){if(DQ.terminal==="Apple_Terminal")return $B.createElement(T,{flexDirection:"column",alignItems:"center"},$B.createElement(C,null,$B.createElement(C,{color:"text"}," * "),$B.createElement(C,{color:"ice_blue"}';
+if (content.includes(l17Marker)) {
+    // Find the full function by locating start and counting braces
+    const startIdx = content.indexOf(l17Marker);
+    let depth = 0;
+    let endIdx = startIdx;
+    for (let i = startIdx; i < content.length && i < startIdx + 2000; i++) {
+        if (content[i] === '{') depth++;
+        if (content[i] === '}') {
+            depth--;
+            if (depth === 0) {
+                endIdx = i + 1;
+                break;
+            }
+        }
+    }
+    const oldL17 = content.substring(startIdx, endIdx);
+
+    // New L17 function - always returns Claudy logo (no Apple_Terminal special case needed)
+    const l17New = 'function L17(){return $B.createElement(T,{flexDirection:"column",alignItems:"center"},' +
+        logoLines.map(line => '$B.createElement(C,{color:"' + line.color + '"},"' + line.text + '")').join(',') + ',' +
+        '$B.createElement(C,{color:"#00ffff"},"' + signatureLine + '"),' +
+        '$B.createElement(C,{color:"#ffff00"},"' + tagline + '"))}';
+
+    content = content.replace(oldL17, l17New);
+    patchCount++;
+    console.log('  [OK] Replaced L17 alternative logo function with Claudy gradient');
+} else {
+    console.log('  [INFO] L17 alternative logo function not found (may be already patched)');
+}
 
 
 // ═══════════════════════════════════════════════════════════════════════════
